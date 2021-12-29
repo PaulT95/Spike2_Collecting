@@ -6,4 +6,4 @@ You can create or import specific ramps to follow based on the feedback (in this
 You can save snippet single shot of (17s) where the TTL starts after 1s and finishes 1s earlier (15s) 
 So many other functions are included, but can applied it as you prefer. 
 
-PS: here the frequency is 2000Hz so the ramp are 30000points, or the calculation are based on that
+PS: here the frequency is 2000Hz so the ramp are 30000points, or the calculation are based on 30000points and the frequency
