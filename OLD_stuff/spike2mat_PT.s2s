@@ -1,0 +1,139 @@
+var wTrials%;                                   'Call to main view window
+
+DoToolbar();                                    'Create toolbar w/ process
+proc DoToolbar()                                
+    ToolbarClear();                               
+    ToolbarSet(0,"",Idle%);                         'Keep toolbar active 
+    ToolbarSet(9,"Open",OpenSubjectData%);          'Opens data file
+    ToolbarSet(8,"US cursors",USsync%);             'Creates cursors to export Spike2 data to matfile using first and last ultrasound frames
+    ToolbarSet(7,"StepF",StepF%);                   'Steps Cursor 0 forward
+    ToolbarSet(6,"StepB",StepB%);                   'Steps Cursor 0 backward
+    ToolbarSet(5,"Convert",ConvertFile%);           'Prompts for filename for Spike2 data to matfile conversion
+    ToolbarSet(4,"Optimise",OptimiseCh%);           'Optimises y axis of visible channels in the main view window
+    ToolbarSet(3,"CloseWindow",WClose%);            'Closes the current view window
+    ToolbarSet(2,"StaticCursors",Static%);          'Turns Active Cursor Mode off
+    ToolbarSet(1,"Exit",Quit%);                     'Closes the toolbar and main view window
+    Toolbar("Don't make mess!!!",1023);                      'Can use all tabs in the menu toolbar 
+    return;                                         'Return followed by no number as it's a process
+end;                                          
+
+'IDLE TOOLBAR
+func Idle%()
+    return 1;	                                    'Return followed by a number to keep toolbar active
+end;         '
+
+func OpenSubjectData%()                         'Open saved Spike2 file
+
+FilePathSet("C:\\Users\\"); 
+if wTrials% > 0 then;
+    FileClose(wTrials%);
+endif;
+
+wTrials%:=FileOpen("",0,1);
+Window(0,0,100,100);                            'Maximise the main view window
+view(wTrials%);
+XRange(0,MaxTime());                            'Show complete time axis
+CursorDelete(-1);                               'Delete all cursors and create new cursors for exporting data
+ChanHide(-1);
+
+if CursorVisible(0) = 0 then
+    CursorVisible(0,1);
+    Cursor(0,0);
+    CursorNew(0,1);
+    CursorNew(0,2);
+endif;
+
+CursorActive(0,14, 31, 0, "", "", 1);           'Search for a data point in the keyboard channel (keyboard channel is always channel 31)
+'CursorActive(0,14, 4, 0, "", "", 1);           'Search for a data point in the keyboard channel (keyboard channel is always channel 31)
+
+CursorActive(1,14, 4, "Cursor(0)-15", "Cursor(0)", "", 1); 'Search for the first data point in the US frame channel, x sec BEFORE Cursor 0 
+CursorActive(2,14, 4, "Cursor(0)+15", "Cursor(0)", "", 1); 'Search for the first data point in the US frame channel, x sec AFTER Cursor 0
+ChanProcessClear(-1,-1);                        'Delete all channel processes and add new ones for EMG channel/s
+    'ChanShow("3");
+    'ChanProcessAdd(3, 2);                       'Add DC Remove to channel of 0.05 sec
+    'ChanSelect(4, 1);
+    'ChanSelect(5, 1);
+    'ChanProcessCopy(-3, 3);                     'Copy processing on above channel to selected channels
+    'ChanHide("3"); 
+ChanShow(-1);                                   '801 is the first virtual channel
+Optimise(-2);                                   'Optimise y range of visible channels
+return 1;
+end;
+
+func USsync%()
+'CursorActive(0,14, 31, 0, "", "", 1);           'Search for a data point in the keyboard channel (keyboard channel is always channel 31)
+'CursorActive(0,14, 5, 0, "", "", 1);           'Search for a data point in the keyboard channel (keyboard channel is always channel 31)
+
+CursorActive(1,14, 5, Cursor(0), MaxTime()); 'Search for the first data point in the US frame channel, x sec BEFORE Cursor 0 
+CursorActive(2,14, 4, Cursor(0)+45, Cursor(0) ); 'Search for the first data point in the US frame channel, x sec AFTER Cursor 0
+return 1;
+end
+
+func StepF%()
+FrontView(wTrials%);
+XRange(0,MaxTime());
+CursorSearch(0);                                'Steps Cursor 0 forward
+XRange(Cursor(1),Cursor(2));                    'Optimises the time range to show between Cursor 1 and Cursor 2
+ChanShow("1..5,31");                            'Hides all channels except those specified in brackets
+Optimise(-2);
+YRange(3,-5,5);                                 'Changes y axis of channel to a -5 to +5 Volt range
+return 1;
+end;
+
+func StepB%()
+FrontView(wTrials%);
+XRange(0,MaxTime());
+CursorSearch(-1);                               'Steps Cursor 0 backward
+XRange(Cursor(1),Cursor(2));                    'Optimises the time range to Cursor 1 and Cursor 2
+Optimise(-2);
+YRange(3,-5,5);                                
+return 1;
+end;
+
+func ConvertFile%()  
+    var curfilename$, lengthfilename%, savefilename$; 
+    'CursorSearch(0);                                'Search using the current Cursor Mode
+        curfilename$:=FileName$(0);                 'Ask for a filename without an extension
+        lengthfilename%:=Len(curfilename$);        
+        savefilename$:=Mid$(curfilename$,0,lengthfilename%-4);
+    XRange(Cursor(1)-5,Cursor(2)+5);                    'Optimises the time range to Cursor 1 and Cursor 2
+    Optimise(-2);
+    ExportChanList(1);                               'Clear the list, set time to zero at first cursor input below
+    ExportChanList(Cursor(1)-5,Cursor(2)+5,-1);  'Export data from channels in "" between first two inputs
+    'ExportRectFormat(200,1);                        'Export channels at 200 Hz using linear interpolation (2=cubic spline interpolation)
+                                                    'Export both time and value data from channels specified above as matfile (second input of 100 required below)
+    FileSaveAs("",100,0,"",0,
+"UseSName=0|UseCName=1|WaveTimes=1|BinFreq=0|BinTimes=0|WaveData=2|MarkAs=1|TMarkAs=2|RMarkAs=2|RMarkData=2|WaveMarkAs=2|WaveMarkData=2|Compat=0|WaveAll=1|WaveSameN=0");   
+    XRange(0,MaxTime());                            'Show complete time axis
+    Optimise(-2);
+    YRange(3,-5,5);                                
+    return 1;
+end;
+
+func OptimiseCh%()
+FrontView(wTrials%);
+Optimise(-2);                                   'Optimise y range of visible channels
+return 1;
+end;
+
+'CLOSE ONE WINDOW
+func WClose%()
+FileClose(0,-1);                                'Close the current window and do not save the data or query the user
+return 1;
+end;
+
+func Static%()                                  'Turn Active Cursor Mode off 
+CursorActive(0,0);
+CursorActive(1,0);
+CursorActive(2,0);
+return 1;
+end
+
+func Quit%()
+var ret%;
+ret%:=Query("Are you sure you wish to quit?");  'Shows a dialog box to prompt the user to quit (safety mechanism)
+if ret%=1 then                                  'If yes...
+   'FileClose(-1,-1);                           'Exits file, closes toolbar and all view windows
+endif;                                          'If no...
+return 1-2*ret%;                                'Returns to opened file with toolbar active and view windows present
+end;
