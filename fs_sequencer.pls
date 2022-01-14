@@ -21,6 +21,7 @@ ISOMED: 'I  DIGOUT [....ii..]
 NONE: 'n HALT
 
 
+;TTL of just 15000ms for ultrasound, 100Hz
 ULTRA: 'u  MOVI V2, 1500 
 ULTRAREP:  DAC 2, 4
            DELAY s(1/200)-4

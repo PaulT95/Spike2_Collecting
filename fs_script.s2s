@@ -19,12 +19,12 @@ var xywidth% := 15;
 var fdbkdata% := 1;    'the channel data that should be given to biofeedback
 var fdbkoffset := 0;    'delay of biofeedbackchannel, usually used when moving average filters are applied
 var allowedoffset := 0.1;    'allowed offset for biofeedback e.g. 0.05 = 5%
-var genxy[12] := {0, 0, 3, 0, 5, 1, 14, 1, 15, 1, 15, 1};    'general ramp that will be given to xy view, taken from r1 or r2  
-var r1[12] := {0, 0, 3, 0, 5, 1, 15, 1, 15, 1, 15, 1};    'ramp memory vector with 12 elements alternating time and corresponding value
-var r2[12] := {0, 0, 3, 0, 5, 1, 15, 1, 15, 0.5, 15, 0.5};
+var genxy[16] :=    {0, 0, 3, 0, 5, 1, 8, 1, 10, 0.7, 12, 0.5, 15, 0, 17, 0};    'general ramp that will be given to xy view, taken from r1 or r2  
+var r1[16] :=       {0, 0, 3, 0, 5, 1, 8, 1, 10, 0.7, 12, 0.5, 15, 0, 17, 0};    'ramp memory vector with 16 elements alternating time and corresponding value
+var r2[16] :=       {0, 0, 3, 0, 5, 10, 8, 1, 10, 0.7, 12, 0.5, 15, 0, 17, 0};;
 
-var rampmax := Max(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11]);    'for ramp range offset and for x and y range
-var rampmin := Min(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11]);
+var rampmax := Max(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);    'for ramp range offset and for x and y range
+var rampmin := Min(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);
 var range := rampmax * allowedoffset;
 
 'Curve feedback ramp
@@ -219,7 +219,7 @@ Func XYRampSettings%()
 
     'ramp appearance settings
     var xp1% := 6;
-    DlgGroup("Simple Ramp", 1, 5, 50, 14);    'just adds a fancy grouping rectangle
+    DlgGroup("Simple Ramp", 1, 5, 50, 18);    'just adds a fancy grouping rectangle
     DlgReal(5, "Timepoint 1", 0, mxywidth%, 0, xp1%);    'there are certain cases when this is annoying and you need to close and open the dialog again
     DlgReal(6, "Value 1", -1000, 1000, 0, xp1%+1);
     DlgReal(7, "Timepoint 2", 0, mxywidth%, 0, xp1%+2);
@@ -232,27 +232,35 @@ Func XYRampSettings%()
     DlgReal(14, "Value 5", -1000, 1000, 0, xp1%+9);
     DlgReal(15, "Timepoint 6", 0, mxywidth%, 0, xp1%+10);
     DlgReal(16, "Value 6", -1000, 1000, 0, xp1%+11);
-    DlgReal(17, "Offset for RMS", 0, 2, 0, xp1%+12);
-
-    DlgGroup("Curve Ramp", 1, 20, 50, 3);
-    DlgLabel(18, "Mean of ", 0, xp1%+15);
-    DlgCheck(19, "C0", 10, xp1%+15);
-    DlgCheck(20, "C1", 18, xp1%+15);
-    DlgCheck(21, "C2", 26, xp1%+15);
-    DlgCheck(22, "C3", 34, xp1%+15);
-    DlgCheck(23, "C4", 42, xp1%+15);
-    DlgReal(24, "Factor", -10, 10, 0, xp1%+16);
-
-    DlgGroup("Store data to array on next snippet", 1, 24, 50, 3);
-    DlgList(25, "Select array column", "C0|C1|C2|C3|C4", 100, 0, xp1%+19);
-    DlgCheck(26, "Arm for storing", 0, xp1%+20);  
-      
-    DlgAllow(0x3ff, 0, ChangeXYSettingsDLG%);    'calls changexysettingsdlg function everytime a change in the xy-settings dialog was made
-    DlgShow(fdbkdata%, xywidth%, allowedoffset, rampnumber%,  genxy, fdbkoffset, throaway%, dc, factor, sc%, storecramp%,fh%);
+    DlgReal(17, "Timepoint 7", 0, mxywidth%, 0, xp1%+12);
+    DlgReal(18, "Value 7", -1000, 1000, 0, xp1%+13);
+    DlgReal(19, "Timepoint 8", 0, mxywidth%, 0, xp1%+14);
+    DlgReal(20, "Value 8", -1000, 1000, 0, xp1%+15);
+    DlgReal(21, "Offset for RMS", 0, 2, 0, xp1%+16);
     
+
+    DlgGroup("Curve Ramp", 1, 24, 50, 3);
+    DlgLabel(22, "Mean of ", 0, xp1%+19);
+    DlgCheck(23, "C0", 10, xp1%+19);
+    DlgCheck(24, "C1", 18, xp1%+19);
+    DlgCheck(25, "C2", 26, xp1%+19);
+    DlgCheck(26, "C3", 34, xp1%+19);
+    DlgCheck(27, "C4", 42, xp1%+19);
+    DlgReal(28, "Factor", -10, 10, 0, xp1%+20);
+
+    DlgGroup("Store data to array on next snippet", 1, 28, 50, 4);
+    DlgList(29, "Select array column", "C0|C1|C2|C3|C4", 100, 0, xp1%+23);
+    DlgCheck(30, "Arm for storing", 0, xp1%+24);  
+
+    'DlgGroup("Draw vertical line as reference", 1, 28, 50, 2);
+    'DlgInteger(27, "Timepoint",0, mxywidth%, 0, xp1%+23);
+    
+    DlgAllow(0x3ff, 0, ChangeXYSettingsDLG%);    'calls changexysettingsdlg function everytime a change in the xy-settings dialog was made
+    
+    DlgShow(fdbkdata%, xywidth%, allowedoffset, rampnumber%,  genxy, fdbkoffset, throaway%, dc, factor, sc%, storecramp%);
+
     return 1;
 end;
-
 
 'FUNCTION TO UPDATE XY-RAMP SETTINGS DIALOG DYNAMICALLY****************************
 Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
@@ -262,7 +270,7 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
         'updates the xy-view immediately by already specifying the new variable value and not waiting for DlgShow
         case item% = 2 then xywidth% := DlgValue(item%);    
         case item% = 3 then allowedoffset := DlgValue(item%);
-        
+    
         case item% = 4 then    'when different ramp selected then 
             rampnumber% := DlgValue(item%);
         
@@ -279,6 +287,7 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
                     next;                
                     FileClose();                 ' we are done with the file
                 endif;
+                
             endif;
             
             'Message("Values : %d", rampnumber%);
@@ -308,30 +317,31 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
                         genxy[x%] := r2[x%];    'needed to update the xy-view immediately 
                 next;
             endif;
-            
+    
+        
             
             
     endcase;
 
     'update general xy appearance and +- feedback offset
     if rampnumber% = 0 or rampnumber% = 1 then
-        DlgEnable(1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17);
-        DlgEnable(0, 18, 19, 20, 21, 22, 23, 24);
-        rampmax := Max(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11]);    'for ramp range offset and for x and y range, only every second value off array as these are the y values
-        rampmin := Min(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11]);
+        DlgEnable(1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
+        DlgEnable(0, 22, 23, 24, 25, 26, 27);
+        rampmax := Max(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);    'for ramp range offset and for x and y range, only every second value off array as these are the y values
+        rampmin := Min(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);
         range := rampmax * allowedoffset;    'feedback offset calculation
     endif;
 
     'RAMP 2
     if rampnumber% = 2 then
-        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17);
-        DlgEnable(1, 18, 19, 20, 21, 22, 23, 24);
-        sc% := DlgValue(25);
-        factor := DlgValue(24);
+        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
+        DlgEnable(1, 22, 23, 24, 25, 26, 27);
+        sc% := DlgValue(29);
+        factor := DlgValue(28);
 
         'var temp[30000];
         for x% := 0 to len(dc)-1 do
-            dc[x%] := DlgValue(19+x%);
+            dc[x%] := DlgValue(23+x%);
             if dc[x%] = 1 then ArrAdd(temp, r3y[][x%]); endif;
         next;
         ArrDiv(temp, ArrSum(dc));
@@ -347,18 +357,19 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
 
     endif;
  ' RAMP 3
-    if rampnumber% = 3 then 'open a dialog and select the TXT file long x points. In case is not the size of the window it will be interpolated
+    if rampnumber% = 3 then 'plot data from the TXT imported. In case is not the size of the window it will be interpolated
         
         DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23);
-        DlgEnable(1, 24);
-        'sc% := DlgValue(25);
-        factor := DlgValue(24);
+        DlgEnable(1, 27);
+        'sc% := DlgValue(29);
+        factor := DlgValue(28);
         
         ArrConst(temp,storeImp);
         for x% := 0 to len(dc)-1 do
-            dc[x%] := DlgValue(19+x%);
+            dc[x%] := DlgValue(23+x%);
             if dc[x%] = 1 then ArrAdd(temp, r3y[][x%]); endif;
         next;
+        
         ArrDiv(temp, ArrSum(dc));
         ArrMul(temp, factor);
 
@@ -379,22 +390,26 @@ end;
 
 'OPEN THE XY VIEW FOR RAMP BIOFEEDBACK*********************************************
 Func XYWindow%()
+
     if xyVH% <= 0 then 
         xyVH% := FileNew(12, 0); WindowVisible(3);    'creates the xy-view if it has not been created
-
+        
         'create channels for ramp and biofeedback as well as general settings for those
         lrampCH% := XYSetChan(0, 0, 0, 1);    'new channel, no fixed number of data points, no sorting, join by line
         urampCH% := XYSetChan(0, 0, 0, 1);
         fdbckCH% := XYSetChan(0, 0, 0, 1);
+
         XYDrawMode(lrampCH%, 2, 0);    '2: size of marker points --> invisible
         XYDrawMode(urampCH%, 2, 0);
         XYDrawMode(fdbckCH%, 2, 0);
         XYDrawMode(lrampCH%, 4, 4);    '4: line thickness (0 - 10)
         XYDrawMode(urampCH%, 4, 4);
         XYDrawMode(fdbckCH%, 4, 3);
+   
         ChanColourSet(lrampCH%, 1, 0, 0.21, 0.38);    'RUB-blue
         ChanColourSet(urampCH%, 1, 0, 0.21, 0.38);    'RUB-blue
         ChanColourSet(fdbckCH%, 1, 0.55, 0.68, 0.06);    'RUB-green
+
         XYDrawMode(-1, 5, 0);    'no auto scaling
     endif;
 
@@ -475,7 +490,7 @@ Func SetEquipment%()
     DlgCheck(4, "Isomed");
     DlgCheck(5, "Save Snippet");
     DlgCheck(6, "Short tap");
-    DlgLabel(7, "Note that only each option on its own, everything, and all but the isomed will result in sequencer output. \nIsomed triggered after 4 seconds, Ultrasound at 100 Hz, Tapper at 50 Hz");
+    DlgLabel(7, "Note that only each option on its own, everything, and all but the isomed will result in sequencer output. \nIsomed triggered after 4 seconds, Ultrasound at 100 Hz");
     'DlgShow(throaway%, uscheck%, tappercheck%, motioncapcheck%, isomedcheck%, savetrue%, shorttap%, throaway%);
     DlgShow(throaway%, uscheck%,  motioncapcheck%, isomedcheck%, savetrue%, shorttap%, throaway%);
 
@@ -484,7 +499,7 @@ Func SetEquipment%()
         'case tappercheck% = 1 and uscheck% = 0 and motioncapcheck% = 0 and isomedcheck% = 0 then samplekey$ := "t";    'tendontapper only
         case uscheck% = 1 and tappercheck% = 0 and motioncapcheck% = 0 and isomedcheck% = 0 then samplekey$ := "u";    'ultrasound only
         'case motioncapcheck% = 1 and tappercheck% = 0 and isomedcheck% = 0 and uscheck% = 0 then samplekey$ := "v";    'vicon only
-        'case isomedcheck% = 1 and motioncapcheck% = 0 and uscheck% = 0 and tappercheck% = 0 then samplekey$ := "i";    'isomed rotation only
+        case isomedcheck% = 1 and motioncapcheck% = 0 and uscheck% = 0 and tappercheck% = 0 then samplekey$ := "i";    'isomed rotation only
         'case uscheck% = 1 and tappercheck% = 1 and motioncapcheck% = 1 and isomedcheck% = 0 then samplekey$ := "1";    'all but isomed rotation
         'case uscheck% = 1 and tappercheck% = 1 and motioncapcheck% = 1 and isomedcheck% = 1 then samplekey$ := "2";    'all
         case uscheck% = 1 and isomedcheck% = 1 then samplekey$ := "m"; '100Hz TTL for all system using BNC splitter, dynamometer will move at after 4
