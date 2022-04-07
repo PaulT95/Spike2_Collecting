@@ -556,14 +556,14 @@ Func SetEquipment%()
     docase
         case shorttap% = 1 then samplekey$ := "j";
         'case tappercheck% = 1 and uscheck% = 0 and motioncapcheck% = 0 and isomedcheck% = 0 then samplekey$ := "t";    'tendontapper only
-        case uscheck% = 1 and tappercheck% = 0 and motioncapcheck% = 0 and isomedcheck% = 0 then samplekey$ := "u";    'ultrasound only
+        case uscheck% = 1 and DAC1_Myon% = 0 and motioncapcheck% = 0 and isomedcheck% = 0 then samplekey$ := "u";    'ultrasound only
         'case motioncapcheck% = 1 and tappercheck% = 0 and isomedcheck% = 0 and uscheck% = 0 then samplekey$ := "v";    'vicon only
-        case isomedcheck% = 1 and motioncapcheck% = 0 and uscheck% = 0 and tappercheck% = 0 then samplekey$ := "i";    'isomed rotation only
+        case isomedcheck% = 1 and motioncapcheck% = 0 and uscheck% = 0 and DAC1_Myon% = 0 then samplekey$ := "i";    'isomed rotation only
         'case uscheck% = 1 and tappercheck% = 1 and motioncapcheck% = 1 and isomedcheck% = 0 then samplekey$ := "1";    'all but isomed rotation
         'case uscheck% = 1 and tappercheck% = 1 and motioncapcheck% = 1 and isomedcheck% = 1 then samplekey$ := "2";    'all
-        case uscheck% = 1 and isomedcheck% = 1 then samplekey$ := "m"; '100Hz duty cycle for all system using BNC splitter, dynamometer will move at after 4
-        case uscheck% = 1 and DAC1_Myon% = 1 and motioncapcheck% = 0 and isomedcheck% =1 then samplekey% := "H"
-        case uscheck% = 1 and DAC1_Myon% = 1 and motioncapcheck% = 0 and isomedcheck% = 0 then samplekey% := "J"
+        case uscheck% = 1 and DAC1_Myon% = 0 and motioncapcheck% = 0 and isomedcheck% = 1  then samplekey$ := "m"; '100Hz duty cycle for all system using BNC splitter, dynamometer will move at after 4
+        case uscheck% = 1 and DAC1_Myon% = 1 and motioncapcheck% = 0 and isomedcheck% = 0 then samplekey% := "H"
+        case uscheck% = 1 and DAC1_Myon% = 1 and motioncapcheck% = 0 and isomedcheck% = 1 then samplekey% := "J"
         else samplekey$ := "n";    'just instructs the sequencer to HOLD
     endcase;
 

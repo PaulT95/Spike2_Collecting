@@ -77,7 +77,7 @@ ULTRAMO2:   DAC 2, 4
 
 ;US (DAC2) 100Hz and TTL MYON (DAC1) FOR 15s AND MOVE ISOMED @sec 4
 MYOUSIMO: 'J ;TTL DAC1 and duty cycle for US @ 100Hz(DAC2) for 15s and trigger isomed at 4s
-            DAC 1, 4  ;TTL from DAC1 and then duty cycle 100Hz DAC2 for US
+            DAC 1, 4  ;TTL from DAC1 and THEN duty cycle 100Hz DAC2 for US
             MOVI V2, 399
 ULTRAMU:   DAC 2, 4
             DELAY s(1/200)-4
