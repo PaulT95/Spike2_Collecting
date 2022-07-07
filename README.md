@@ -10,3 +10,6 @@ PS: here the frequency set in the Config File is 2000Hz so when exporting you wi
 
 
 Thanks to my first German Office Mate **[Tobi (the) Weingarten](https://github.com/vinjardin)** 🍷 who creates the first versions!!!
+
+Example real time following ramp
+![GIF_Ramp](https://user-images.githubusercontent.com/73119114/177746110-d5c6240d-1af0-44d8-83c9-f5e2dd74e2d0.gif)
