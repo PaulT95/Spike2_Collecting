@@ -1,5 +1,5 @@
-# Spike2_Collecting
-Spike script for collecting and sampling with a nice interface
+# Spike2 - Collecting Data
+Spike2 script for collecting and sampling with a nice interface. The main point that you need to adapt is the "Equipment options%" because it is associated with the sequencer and the sampling configuration. 
 
 You can change the sequencer to create specific TTL or DutyCycle signal and trigger the devices, it depends what you need
 You can create or import specific ramps to follow via a live feedback (in this case you can chose the channel like Torque, Force, whatever)
