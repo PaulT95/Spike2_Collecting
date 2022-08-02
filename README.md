@@ -9,7 +9,7 @@ I am lazy to describe eveything but many other functions are included, but you c
 PS: here the frequency set in the Config File is 2000Hz so when exporting you will have all channels with 34000 points
 
 
-Thanks to my first German Office Mate **[Tobi (the) Weingarten](https://github.com/vinjardin)** 🍷 who creates the first versions!!!
+Thanks to my first German Office Mate **[Tobi (the) Weingarten](https://github.com/vinjardin)** 🍷 who creates the first version!!!
 
 Example real time ramp with dynamic X-Range
 
