@@ -25,6 +25,7 @@ var r2[16] :=       {0, 0, 3, 0, 5, 10, 8, 1, 10, 0.7, 12, 0.5, 15, 0, 17, 0};
 var rampmax := Max(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);    'for ramp range offset and for x and y range
 var rampmin := Min(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);
 var range := rampmax * allowedoffset;
+var x_dynamic% := 0;
 
 'Curve feedback ramp
 var storecramp% := 0;
@@ -155,9 +156,9 @@ Func Idle%()
         relativetime := MaxTime() - startramp;
         lastdata := ChanValue(fdbkdata%, MaxTime()-fdbkoffset);
         View(xyVH%);
-        if xyVH% > 0 then
-            XRange(relativetime-1, relativetime +2); 'Moving win in XY for following trace on X with Y  fixed
-            XYAddData(fdbckCH%, relativetime, lastdata);
+    if xyVH% > 0 then         
+        if (x_dynamic% = 1) then XRange(relativetime-1, relativetime +2); endif'Moving win in XY for following trace on X with Y  fixed           
+            XYAddData(fdbckCH%, relativetime, lastdata); 
         endif;  'draw the x value as relative time to be able to have static ramps
         return 1;
     endif;
@@ -232,7 +233,7 @@ end;
 Func XYRampSettings%()
     var mxywidth% := 60;
 
-    DlgCreate("Settings for ramps with up to six points");
+    DlgCreate("Settings for ramps with up to eight points");
 
     'general settings
     DlgChan(1, "Select feedback channel", 0x40000);
@@ -261,6 +262,7 @@ Func XYRampSettings%()
     DlgReal(20, "Value 8", -1000, 1000, 0, xp1%+15);
     DlgReal(21, "Offset for RMS", 0, 2, 0, xp1%+16);
 
+
     DlgGroup("Curve Ramp", 1, 24, 50, 3);
     DlgLabel(22, "Mean of ", 0, xp1%+19);
     DlgCheck(23, "C0", 10, xp1%+19);
@@ -278,9 +280,11 @@ Func XYRampSettings%()
     DlgReal(31, "Timepoint Line 1",0, mxywidth%, 0, xp1%+27);
     DlgReal(32, "Timepoint Line 2",0, mxywidth%, 0, xp1%+28);
 
+    DlgCheck(33,"Dynamic X-Range in the XY view",0, xp1%+29);
+
     DlgAllow(0x3ff, 0, ChangeXYSettingsDLG%);    'calls changexysettingsdlg function everytime a change in the xy-settings dialog was made
 
-    DlgShow(fdbkdata%, xywidth%, allowedoffset, rampnumber%,  genxy, fdbkoffset, throaway%, dc, factor, sc%, storecramp%, vline);
+    DlgShow(fdbkdata%, xywidth%, allowedoffset, rampnumber%,  genxy, fdbkoffset, throaway%, dc, factor, sc%, storecramp%, vline, x_dynamic%);
     XYWindow%();    'should add after in the function change xy setting dlg but item that change doesn´t make sense
     return 1;
 end;
@@ -470,18 +474,14 @@ Func XYWindow%()
     XYDelete(urampCH%);
     XYDelete(llrampCH%);
     XYDelete(uurampCH%);
-    XYDelete(vertLine%);
-    XYDelete(vertLine2%);
+'    XYDelete(vertLine%);
+'    XYDelete(vertLine2%);
 
-  'If you leave 0, no vertical lines around'
-if vline[0] <> 0 then
-    XYAddData(vertLine%, vline[0], -500);  'just two hyphotetical values (I guess it's hard that someone reaches 1000 peak 2 peak)'
-    XYAddData(vertLine%, vline[0], 500);
-endif;
-if vline[1] <> 0 then
-    XYAddData(vertLine2%, vline[1], -500);
-    XYAddData(vertLine2%, vline[1], 500);
-endif;
+    'just two hyphotetical values (I guess it's hard that someone reaches 1000 peak 2 peak)'
+'    XYAddData(vertLine%, vline[0], -500);
+'    XYAddData(vertLine%, vline[0], 500);
+'    XYAddData(vertLine2%, vline[1], -500);
+'    XYAddData(vertLine2%, vline[1], 500);
 
     'add the data for the ramps as defined in the settings / dialog box
     if rampnumber% = 0 or rampnumber% = 1 then
@@ -526,7 +526,7 @@ endif;
     endif
 
     XRange(0, xywidth%);
-
+    
 
     return 1;
 end;
@@ -549,19 +549,19 @@ end;
 'TODO: Add a field which sets the number of seconds stuff should be sampled --> pass this to the sequencer'
 Func SetEquipment%()
 
-
+    
     DlgCreate("Select Capture Equipment");
     DlgLabel(1, "Devices that will be used / triggered during 15s snippet");
     DlgCheck(2, "Save Snippet");
     DlgCheck(3, "Ultrasound");
-    'DlgCheck(3, "Tendon Tapper");
+    'DlgCheck(3, "Tendon Tapper");    
     DlgCheck(4, "Motion Capture");
-    DlgCheck(5, "Isomed");
+    DlgCheck(5, "Isomed");    
     DlgCheck(6, "Short tap");
     DlgCheck(7, "IMUs (Myon) / DAC1");
     DlgCheck(8, "Blocker / DAC3");
     DlgLabel(9, "Note that only each option on its own, everything, and all but the isomed will result in sequencer output. \nIsomed triggered after 4 seconds, Ultrasound at max 100 Hz");
-
+   
     'DlgShow(throaway%, uscheck%, tappercheck%, motioncapcheck%, isomedcheck%, savetrue%, shorttap%, throaway%);
     DlgShow(throaway%, savetrue%, uscheck%, motioncapcheck%, isomedcheck%,  shorttap%, DAC1_Myon%, DAC3%, throaway%);
 
