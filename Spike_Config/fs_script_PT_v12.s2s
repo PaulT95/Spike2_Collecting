@@ -170,7 +170,7 @@ Func Idle%()
       Cursor(3, MaxTime()); CursorVisible(3);
       Yield(1);
       ExportChanList(1);    'initialise the channel list
-      ExportChanList(Cursor(0), Cursor(0)+17, -1);
+      ExportChanList(Cursor(0), Cursor(0)+ xywidth%+2, -1); 'save from the time snippet was clicked to the length of the XY set (X-range) + 2
       WriteFileName%(); 'Func to save and also send the potential cmd to US exe app to save with same name
       idlesave% := 0;
       quickAnalysis%(which%); 'call the function to analyse between cursor 2 and 3 based on selection selected
@@ -474,14 +474,14 @@ Func XYWindow%()
     XYDelete(urampCH%);
     XYDelete(llrampCH%);
     XYDelete(uurampCH%);
-'    XYDelete(vertLine%);
-'    XYDelete(vertLine2%);
+    XYDelete(vertLine%);
+    XYDelete(vertLine2%);
 
     'just two hyphotetical values (I guess it's hard that someone reaches 1000 peak 2 peak)'
-'    XYAddData(vertLine%, vline[0], -500);
-'    XYAddData(vertLine%, vline[0], 500);
-'    XYAddData(vertLine2%, vline[1], -500);
-'    XYAddData(vertLine2%, vline[1], 500);
+    XYAddData(vertLine%, vline[0], -500);
+    XYAddData(vertLine%, vline[0], 500);
+    XYAddData(vertLine2%, vline[1], -500);
+    XYAddData(vertLine2%, vline[1], 500);
 
     'add the data for the ramps as defined in the settings / dialog box
     if rampnumber% = 0 or rampnumber% = 1 then
@@ -620,7 +620,7 @@ Func WriteFileName%()
   var butCancel% := 0, shitCheck% := 1;  'just a check '
   var ItemText$:= "";
   'need this shit otherwise error --> too loooooong argument
-  var expFlags$ := "UseSName=0|UseCName=1|WaveTimes=0|BinFreq=0|BinTimes=0|WaveData=2|MarkAs=1|TMarkAs=2|RMarkAs=2|RMarkData=2|WaveMarkAs=2|WaveMarkData=2|Compat=0|WaveAll=1|WaveSameN=0";
+  var expFlags$ := "UseSName=0|UseCName=1|WaveTimes=1|BinFreq=0|BinTimes=0|WaveData=2|MarkAs=1|TMarkAs=2|RMarkAs=2|RMarkData=2|WaveMarkAs=2|WaveMarkData=2|Compat=0|WaveAll=1|WaveSameN=0";
 
     'Dialog box
     while(ItemText$ = "" or shitCheck% = 1 ) do
