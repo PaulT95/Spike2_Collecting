@@ -170,7 +170,7 @@ Func Idle%()
       Cursor(3, MaxTime()); CursorVisible(3);
       Yield(1);
       ExportChanList(1);    'initialise the channel list
-      ExportChanList(Cursor(0), Cursor(0)+ xywidth%+2, -1); 'save from the time snippet was clicked to the length of the XY set (X-range) + 2
+      ExportChanList(Cursor(0), Cursor(0)+ xywidth%+1, -1); 'save from the time snippet was clicked to the length of the XY set (X-range) + 2
       WriteFileName%(); 'Func to save and also send the potential cmd to US exe app to save with same name
       idlesave% := 0;
       quickAnalysis%(which%); 'call the function to analyse between cursor 2 and 3 based on selection selected
