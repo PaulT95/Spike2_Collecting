@@ -1,4 +1,5 @@
 SET    0.01, 1, 0    ; clock tick = 10 microseconds
+VAR    V10; ;USTime ;set var for US onl
 
 DAC    2, 0    ;ultrasound --> this is a TTL with duty cycle of 100Hz, var1
 DAC    1, 0    ;IMUs/EMGs system --> this is a TTL, var2
@@ -13,7 +14,7 @@ OISOMED: 'i DELAY ms(4000)-1 ;move only Isomed after 4s
             HALT
 
 ;MOVE ISOMED
-ISOMED: 'I  DIGOUT [....ii..] ;move Isomed
+ISOMED: 'I  DIGOUT [....ii..] ;move Isomed            
             HALT
 
 ;DAC3   ON
@@ -40,12 +41,12 @@ INFUS: 'U  DAC 2, 4 ;INFINITE US
 NONE: 'n HALT
 
 ;ONLY ULTRASOUND 15s
-ULTRA: 'u  MOVI V2, 1500 ;only TTL DAC2 with duty cycle 15s for ultrasound @ 100Hz
-ULTRAREP:  DAC 2, 4
+;ULTRA: 'u  MOVI V2, 1000 ;only TTL DAC2 with duty cycle 15s for ultrasound @ 100Hz
+ULTRAREP: 'u  DAC 2, 4
            DELAY s(1/200)-4
            DAC 2, 0
            DELAY s(1/200)-1
-           DBNZ V2, ULTRAREP
+           DBNZ V10, ULTRAREP ;get V10 from script
            HALT
 
 ;US (DAC2) DUTYCYCLE 100Hz, MYON (DAC1) TTL for 15s and RELEASE DAC3 @4s

@@ -5,9 +5,11 @@ var mvcVH%, xyVH%;
 
 'XY-View channels
 var lrampCH%, urampCH%, fdbckCH%;
+var repXYcycle% := 1; 'repetitive contractions on XY view
+var allXY%;
 
 'Channel duplication / calculations
-var totalfdbckCH%, VLrmsCH%, VMrmsCH%, RFrmsCH%;
+'var totalfdbckCH%, VLrmsCH%, VMrmsCH%, RFrmsCH%;
 
 'Temporary trash variables for multiple functions
 var x%, throaway%;
@@ -84,7 +86,7 @@ Proc DoToolbar()
     ToolbarSet(22, "Start Sampling", New%);
 
     ToolbarSet(20, "Change View", ChangeView%);
-
+    ToolbarSet(19, "Repetitive XY", RepXY%);
     ToolbarSet(16, "XY-Ramp", XYRampSettings%);
     ToolbarSet(15, "Get XY-Data", GetXYData%);
 
@@ -127,6 +129,8 @@ Proc DisplayButtons()
         ToolbarEnable(15, 0);
         ToolbarEnable(16, 0);
         ToolbarEnable(20, 0);
+        ToolbarEnable(19, 0);
+
     case mainVH% >= 0 then
         ToolbarEnable(1, 0);
         ToolbarEnable(2, 1);
@@ -143,6 +147,7 @@ Proc DisplayButtons()
         ToolbarEnable(16, 1);
         ToolbarEnable(20, 1);
         ToolbarEnable(22, 0);
+        ToolbarEnable(19, 1);
     endcase;
 end;
 
@@ -152,25 +157,25 @@ var relativetime, lastdata;    'global variables but specific to IDLE, not insid
 
 Func Idle%()
     View(mainVH%);    'select main view so that maxtime can be read in the following if-condition
-    if MaxTime() < startramp + xywidth% and mainVH% > 0 then    'startramp is the maximum time at ramp initialisation <-- GetXYData()
+    if MaxTime() < startramp + allXY% and mainVH% > 0 then    'startramp is the maximum time at ramp initialisation <-- GetXYData()
         relativetime := MaxTime() - startramp;
         lastdata := ChanValue(fdbkdata%, MaxTime()-fdbkoffset);
         View(xyVH%);
-    if xyVH% > 0 then         
-        if (x_dynamic% = 1) then XRange(relativetime-1, relativetime +2); endif'Moving win in XY for following trace on X with Y  fixed           
-            XYAddData(fdbckCH%, relativetime, lastdata); 
-        endif;  'draw the x value as relative time to be able to have static ramps
+    if xyVH% > 0 then
+        if (x_dynamic% = 1) then XRange(relativetime-1, relativetime +2); endif'Moving win in XY for following trace on X with Y  fixed
+        XYAddData(fdbckCH%, relativetime, lastdata);
+    endif;  'draw the x value as relative time to be able to have static ramps
         return 1;
     endif;
 
 
-    if idlesave% = 1 and MaxTime() > (startramp + xywidth%) then 'i need idle save other wise it will always enter here
+    if idlesave% = 1 and MaxTime() > (startramp + allXY%) then 'i need idle save other wise it will always enter here
       FrontView(mainVH%); 'set mainVH just to be sure to be in the time view'
       CursorNew(MaxTime(),3);    ' cursor3 at max time
       Cursor(3, MaxTime()); CursorVisible(3);
       Yield(1);
       ExportChanList(1);    'initialise the channel list
-      ExportChanList(Cursor(0), Cursor(0)+ (xywidth%+2), -1); 'save from the time snippet was clicked to the length of the XY set (X-range) + 2
+      ExportChanList(Cursor(0), Cursor(0)+ (allXY%+2), -1); 'save from the time snippet was clicked to the length of the XY set (X-range) + 2
       WriteFileName%(); 'Func to save and also send the potential cmd to US exe app to save with same name
       idlesave% := 0;
       quickAnalysis%(which%); 'call the function to analyse between cursor 2 and 3 based on selection selected
@@ -215,7 +220,7 @@ end;
 Func New%()
 
     FileOpen("",6,1,"Select Sampling config file"); 'open dialog to load sampling config file
-    SampleSequencer("D:/Paolo/Spike_Config/fs_sequencer.pls");     'sets sequencer file to use
+    SampleSequencer("D:/Tim/Spike_Config/fs_sequencer.pls");     'sets sequencer file to use
     Message("WARNING! DISABLE ISOMED TRIGGER! Depending on the selected program rotation might occur.");
     'FileOpen("D:/Paolo/config_v8_beta/fs_sampling_config_new.s2cx", 6);    'sets sampling config to use
 
@@ -381,7 +386,7 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
  ' RAMP 3
     if rampnumber% = 3 then 'plot data from the TXT imported. In case is not the size of the window it will be interpolated
 
-        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21); ', 22, 23, 24, 25, 26, 27);
+        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
         DlgEnable(0, 22, 23, 24, 25, 26, 27);
         'sc% := DlgValue(29);
         factor := DlgValue(28);
@@ -478,19 +483,35 @@ Func XYWindow%()
     XYDelete(vertLine2%);
 
     'just two hyphotetical values (I guess it's hard that someone reaches 1000 peak 2 peak)'
-    XYAddData(vertLine%, vline[0], -500);
-    XYAddData(vertLine%, vline[0], 500);
-    XYAddData(vertLine2%, vline[1], -500);
-    XYAddData(vertLine2%, vline[1], 500);
+    'if they are set to 0 do not add them, because it's annoying for the XY view axis
+    if (vLine[0] <> 0) then
+      XYAddData(vertLine%, vline[0], -500);
+      XYAddData(vertLine%, vline[0], 500);
+    endif
+    if (vLine[1] <> 0) then
+      XYAddData(vertLine2%, vline[1], -500);
+      XYAddData(vertLine2%, vline[1], 500);
+    endif
 
     'add the data for the ramps as defined in the settings / dialog box
     if rampnumber% = 0 or rampnumber% = 1 then
+      var lastValx := 1; 'only X because Y I don't care, it will be repeated. First must be zero
+      var n_con% := 0;
+    
+      for n_con% := 0 to (repXYcycle%-1) do 'independent of how many repeated cycles'
+
+        lastValx := (lastValx * n_con%); 'first cycle lastValx = 0'
+
         for x% := 1 to len(genxy)/2 do
-            XYAddData(lrampCH%, genxy[x%*2-2], genxy[x%*2-1]-range);
+            XYAddData(lrampCH%, genxy[x%*2-2]+lastValx, genxy[x%*2-1]-range);
         next;
         for x% := 1 to len(genxy)/2 do
-            XYAddData(urampCH%, genxy[x%*2-2], genxy[x%*2-1]+range);
+            XYAddData(urampCH%, genxy[x%*2-2]+lastValx, genxy[x%*2-1]+range);
         next;
+        'TO DO: check value x% here, if it's equal to genxy()
+        lastValx := genxy[(len(genxy)) - 2]; 'get the last X value of the array'
+        'PrintLog(lastValx);
+      next;
     endif;
 
     if rampnumber% = 2 or rampnumber% = 3 then
@@ -525,7 +546,9 @@ Func XYWindow%()
 
     endif
 
-    XRange(0, xywidth%);
+    if (rampnumber% = 0 or rampnumber% = 1) then XRange(0, xywidth%*repXYcycle%); 'show overall range based on XY width because you're snippetting based on that!!!
+    else XRange(0,xywidth%); 'in case you are using other ramps
+    endif
 
     return 1;
 end;
@@ -548,19 +571,19 @@ end;
 'TODO: Add a field which sets the number of seconds stuff should be sampled --> pass this to the sequencer'
 Func SetEquipment%()
 
-    
+
     DlgCreate("Select Capture Equipment");
     DlgLabel(1, "Devices that will be used / triggered during 15s snippet");
     DlgCheck(2, "Save Snippet");
     DlgCheck(3, "Ultrasound");
-    'DlgCheck(3, "Tendon Tapper");    
+    'DlgCheck(3, "Tendon Tapper");
     DlgCheck(4, "Motion Capture");
-    DlgCheck(5, "Isomed");    
+    DlgCheck(5, "Isomed");
     DlgCheck(6, "Short tap");
     DlgCheck(7, "IMUs (Myon) / DAC1");
     DlgCheck(8, "Blocker / DAC3");
     DlgLabel(9, "Note that only each option on its own, everything, and all but the isomed will result in sequencer output. \nIsomed triggered after 4 seconds, Ultrasound at max 100 Hz");
-   
+
     'DlgShow(throaway%, uscheck%, tappercheck%, motioncapcheck%, isomedcheck%, savetrue%, shorttap%, throaway%);
     DlgShow(throaway%, savetrue%, uscheck%, motioncapcheck%, isomedcheck%,  shorttap%, DAC1_Myon%, DAC3%, throaway%);
 
@@ -586,11 +609,16 @@ end;
 'FUNCTION TO TRIGGER EQUIPMENT, START BIOFEEDBACK AND SAVE SHORT SNIPPETS**********
 Func Snippet%()
 
-    
-
+    if rampnumber% = 0 or rampnumber% = 1 then
+        allXY% := xywidth% * repXYcycle%; 'calculate overall XY duration'
+    else
+        allXY% := xywidth%;
+    endif
     'prepare a cursor from which on the snippet can be saved
     View(mainVH%);
-    SampleSeqVar(10,xywidth%*100);
+
+    SampleSeqVar(10,allXY%*100); 'Set to the sequencer the duration of the duty cycle depending on XY view'
+
     Cursor(0, MaxTime());
     CursorVisible(0,1);
     CursorActive(0,14, 31, 0, "", "", 1);   'Data points --> keyboard. Make cursor 0 active to search keyboard
@@ -603,7 +631,7 @@ Func Snippet%()
     CursorNew(MaxTime(),2);    'set the cursor2 already in the main view
     Cursor(2,MaxTime());
     GetXYData%();   'sets startramp variable to current time so that biofeedback can be given
-    SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%() 
+    SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
     if savetrue% = 1 then idlesave% := 1; endif;    'idle function checks for state of idlesave% variable
     if storecramp% = 1 then idlecramp% :=1; endif;     'idle function checks for state of idlecramp% variable
 
@@ -809,4 +837,19 @@ Func DAC3OFF%()
   ToolbarSet(8, "DAC3 ON", DAC3ON%);
   return 1;
 
+end
+'Function for opening Dialog and choose how many times to repeat the XY ramp 1-2 ***************************************************************************************
+Func RepXY%()
+
+    DlgCreate("Repetitive XY");
+    DlgLabel(1, "How many cycles do you want to repeat the XY?" );
+    DlgLabel(2,"Be careful if you do many contractions I suggest to tick Dynamic X Range in XY View for having better feedback for the subjects");
+    DlgLabel(3, "Only if you tick US in Equipment Options will last as long as the XY overall, for the rest, program the Sequencer"); 'TO DO, pass instruct to sequencer for trigger isomed
+    DlgInteger(4, "Repetition", 1, 60);    'there are certain cases when this is annoying and you need to close and open the dialog again
+    DlgLabel(5, "CAUTION! the snippet is working based on the X-Range value and not the last TimePoint value!"); 'TO DO, pass instruct to sequencer for trigger isomed
+
+    DlgShow(throaway%,throaway%,throaway%, repXYcycle%,throaway%);
+
+    XYWindow%(); 'Update XY if you change the number of reps'
+    return 1;
 end
