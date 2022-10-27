@@ -59,7 +59,7 @@ var idlesave% := 0;
 'Analysis options '
 var listAnalysis$[7] := {"Nothing","Peak2Peak","Area","Mean","Max","Min","SD"};
 var which% := 0;
-
+var PosCursor[2] := {8,10};
 'NameFile variable for prompt and send the command to SaveEco.exe and saving automatically the US data
 var  NameFiles$;
 
@@ -772,7 +772,9 @@ Func SetAnalysisOpts%()
     DlgCreate("Select analysis");
     DlgLabel(1, "Select what analyse of the feedback channel: ");
     DlgList(2, "Choose", listAnalysis$[]); 'Add the list to the dialog ok% := DlgShow(which%); 'Display dialog, wait for user
-    DlgShow(throaway%,  which%);
+    DlgReal(3,"Set Position Cursor 2 relative to 0",PosCursor[1]);
+    DlgReal(4,"Set Position Cursor 3 relative to 0",PosCursor[2]);
+    DlgShow(throaway%,  which%, PosCursor[1], PosCursor[2]);
     quickAnalysis%(which%);
 
     return 1;
@@ -808,10 +810,10 @@ Func quickAnalysis%(which%)
     endif
   endif
 
-  'Always set cursor 2 and 3 active to follow cursor 9 so easy to navigate and perform analysis each time you snippet'
+  'Always set cursor 2 and 3 active to follow cursor 0 so easy to navigate and perform analysis each time you snippet'
   'Set cursor 2 and 3 in active mode
-  CursorActive(2,16, 0, "Cursor(0)+8");   'Expression
-  CursorActive(3,16, 0, "Cursor(0)+10");   'Expression
+  CursorActive(2,16, 0, "Cursor(0)+"PosCursor[1]);   'Expression
+  CursorActive(3,16, 0, "Cursor(0)+"PosCursor[2]);   'Expression
 
   'Create two horizontal cursor for max and min'
   'HCursorDelete(-1); 'Delete all cursors otherwise will add tons of them
