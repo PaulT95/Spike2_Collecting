@@ -7,10 +7,12 @@ var mvcVH%, xyVH%;
 var lrampCH%, urampCH%, fdbckCH%;
 var repXYcycle% := 1; 'repetitive contractions on XY view
 var allXY%;
-
+var n% = 1; 'var for IDLE for checking how many contraction'
 'Channel duplication / calculations
 'var totalfdbckCH%, VLrmsCH%, VMrmsCH%, RFrmsCH%;
-
+'VARS to pass to the SEQUENCER '
+var TP_Isomed[2] := {4, 10};
+var TP_DAC3 := 4;
 'Temporary trash variables for multiple functions
 var x%, throaway%;
 var startramp := -100;    'so that maxtime is always greater than startramp unless changed by GetXYData()
@@ -86,7 +88,7 @@ Proc DoToolbar()
     ToolbarSet(22, "Start Sampling", New%);
 
     ToolbarSet(20, "Change View", ChangeView%);
-    ToolbarSet(19, "Repetitive XY", RepXY%);
+    ToolbarSet(19, "Rep XY & Sequencer Config", RepXY%);
     ToolbarSet(16, "XY-Ramp", XYRampSettings%);
     ToolbarSet(15, "Get XY-Data", GetXYData%);
 
@@ -161,14 +163,15 @@ Func Idle%()
         relativetime := MaxTime() - startramp;
         lastdata := ChanValue(fdbkdata%, MaxTime()-fdbkoffset);
         View(xyVH%);
-    if xyVH% > 0 then
-        if (x_dynamic% = 1) then XRange(relativetime-1, relativetime +2); endif'Moving win in XY for following trace on X with Y  fixed
+        if xyVH% > 0 then
+          if (x_dynamic% = 1) then XRange(relativetime-1, relativetime +2); endif'Moving win in XY for following trace on X with Y  fixed
         XYAddData(fdbckCH%, relativetime, lastdata);
-    endif;  'draw the x value as relative time to be able to have static ramps
-    if (mod(relativetime, xywidth%) / n%) < repXYcycle% 'if repetitive, re-Send the sequencer instruct'
-      SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
-      n% := n% + 1;
-    endif
+      endif;  'draw the x value as relative time to be able to have static ramps
+      if (mod(relativetime, xywidth%) = n% then 'if repetitive, re-Send the sequencer instruct'
+        SetUp_VarSeq%(); 'Send values to Sequencer for the new cycle
+        SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
+        n% := n% + 1; 'Potentially delete old point in the XY if becomes too slow'
+      endif
         return 1;
     endif;
 
@@ -575,7 +578,6 @@ end;
 'TODO: Add a field which sets the number of seconds stuff should be sampled --> pass this to the sequencer'
 Func SetEquipment%()
 
-
     DlgCreate("Select Capture Equipment");
     DlgLabel(1, "Devices that will be used / triggered during 15s snippet");
     DlgCheck(2, "Save Snippet");
@@ -606,7 +608,6 @@ Func SetEquipment%()
 
         else samplekey$ := "n"; Message("No sequener instruction found");    'just instructs the sequencer to HOLD
     endcase;
-
     return 1;
 end;
 
@@ -620,9 +621,11 @@ Func Snippet%()
     endif
     'prepare a cursor from which on the snippet can be saved
     View(mainVH%);
+    n% := 1; 'reset number of contractions/XY performed'
 
-    SampleSeqVar(10,allXY%*100); 'Set to the sequencer V10 the duration of the duty cycle depending on XY view'
-
+    'Pass values to vars of the sequencer'
+    'SampleSeqVar(10,allXY%*100); 'Set to the sequencer V10 the duration of the duty cycle depending on XY view'
+    SetUp_VarSeq%(); 'Firt snippet Send Vars to sequencer'
     Cursor(0, MaxTime());
     CursorVisible(0,1);
     CursorActive(0,14, 31, 0, "", "", 1);   'Data points --> keyboard. Make cursor 0 active to search keyboard
@@ -642,6 +645,36 @@ Func Snippet%()
     return 1;
 end;
 
+'FUNCTION TO CHECK LAST XY view AND SETUP THE SEQUENCER BEFORE SNIPPET**********
+Func SetUp_VarSeq%()
+  'Var 10 = US
+  SampleSeqVar(10,xywidth%*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
+  SampleSeqVar(11,TP_Isomed[1]*100);
+  SampleSeqVar(12,TP_Isomed[2]*100);
+  SampleSeqVar(13,TP_DAC3*100);
+  return 1;
+end
+
+'Function for opening Dialog and choose how many times to repeat the XY ramp 1-2 ***************************************************************************************
+Func RepXY%()
+
+    DlgCreate("Repetitive XY");
+    DlgLabel(1, "How many cycles do you want to repeat the XY?" );
+    DlgLabel(2,"Be careful if you do many contractions I suggest to tick Dynamic X Range in XY View for having better feedback for the subjects");
+    DlgLabel(3, "If you tick US in Equipment Options it will last as long as the XY overall, for the rest, program the Sequencer"); 'TO DO, pass instruct to sequencer for trigger isomed
+    DlgInteger(4, "Repetition", 1, 60);    'there are certain cases when this is annoying and you need to close and open the dialog again
+    DlgReal(5, "TimePoint ISOMED 1",TP_Isomed[1], mxywidth%);
+    DlgReal(6, "TimePoint ISOMED 2",TP_Isomed[2], mxywidth%);
+    DlgReal(7, "TimePoint DAC 3",TP_DAC3, mxywidth%);
+    DlgLabel(8, "CAUTION! the snippet is working based on the X-Range value and not the last TimePoint value!"); 'TO DO, pass instruct to sequencer for trigger isomed
+
+    DlgShow(throaway%, throaway%, throaway%, repXYcycle%,TP_Isomed[1],TP_Isomed[2],TP_DAC3,throaway%);
+    'SORT'
+    ArrSort(TP_Isomed); 'In case someone wants to be stupid'
+
+    XYWindow%(); 'Update XY if you change the number of reps'
+    return 1;
+end
 
 'DIALOG BOX FOR WRITE FILE NAME **************************************************************************
 'Dialog Box to set up the name for files and Return the NameFiles(global var to initialize outside the func)
@@ -840,20 +873,4 @@ Func DAC3OFF%()
   SampleKey("W");
   ToolbarSet(8, "DAC3 ON", DAC3ON%);
   return 1;
-
-end
-'Function for opening Dialog and choose how many times to repeat the XY ramp 1-2 ***************************************************************************************
-Func RepXY%()
-
-    DlgCreate("Repetitive XY");
-    DlgLabel(1, "How many cycles do you want to repeat the XY?" );
-    DlgLabel(2,"Be careful if you do many contractions I suggest to tick Dynamic X Range in XY View for having better feedback for the subjects");
-    DlgLabel(3, "Only if you tick US in Equipment Options will last as long as the XY overall, for the rest, program the Sequencer"); 'TO DO, pass instruct to sequencer for trigger isomed
-    DlgInteger(4, "Repetition", 1, 60);    'there are certain cases when this is annoying and you need to close and open the dialog again
-    DlgLabel(5, "CAUTION! the snippet is working based on the X-Range value and not the last TimePoint value!"); 'TO DO, pass instruct to sequencer for trigger isomed
-
-    DlgShow(throaway%,throaway%,throaway%, repXYcycle%,throaway%);
-
-    XYWindow%(); 'Update XY if you change the number of reps'
-    return 1;
 end
