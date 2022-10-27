@@ -3,7 +3,11 @@ VAR    V10; ;USTime ;set var for US only
 VAR    V11; ;ISOMED 1
 VAR    V12; ;ISOMED 2
 VAR    V13; ;DAC 3 (blocker)
-
+VAR    V14; ;ISOMED 1 - XY
+VAR    V15; ;ISOMED 2 - ISOMED 1
+VAR    V16; ;ISOMED 2 - XY
+VAR    V17; ;DAC 3 - XY
+;I NEED ALL THEM BECAUSE I CAN'T DO CALCULATIONS IN THE LOOP AS WELL AS IT WILL TAKE ticks!
 
 DAC    1, 0    ;IMUs/EMGs system --> this is a TTL, var2
 DAC    2, 0    ;ultrasound --> this is a TTL with duty cycle of 100Hz, var1
@@ -12,10 +16,7 @@ DIGOUT [....01..]    ;digital bits 2 and 3 control the isomed, initially one of 
 ;!!!!! A WARNING should be send to the user before running the sequencer / the script that is calling it !!!!!
 HALT
 
-;MOVE ONLY ISOMED AFTER 4 seconds
-OISOMED: 'i DELAY ms(4000)-1 ;move only Isomed after 4s
-            DIGOUT [....ii..]
-            HALT
+
 
 ;MOVE ISOMED
 ISOMED: 'I  DIGOUT [....ii..] ;move Isomed
@@ -40,77 +41,78 @@ INFUS: 'U  DAC 2, 4 ;INFINITE US
            BEQ V1, 1, INFUS    ;V1 is manually updated via a button click in the toolbar
            HALT
 
-;DEFINITIONS FOR 15 SECOND USE OF SINGLE OR COMBINATION OF MEASUREMENT EQUIPMENT
 
+;DEFINITIONS FOR n SECOND USE OF SINGLE OR COMBINATION OF MEASUREMENT EQUIPMENT
+
+;MOVE ONLY ISOMED AFTER 4 seconds
+OISOMED: 'i DELAY V11 ;move only Isomed after time defined in the script
+            DIGOUT [....ii..]
+            HALT
 NONE: 'n HALT
 
-;ONLY ULTRASOUND 15s
-;ULTRA: 'u  MOVI V2, 1000 ;only TTL DAC2 with duty cycle 15s for ultrasound @ 100Hz
+;ONLY ULTRASOUND AS XY WIDTH
+;only TTL DAC2 WITH DUTY CYCLE @ 100Hz FOR THE US
 ULTRAREP: 'u  DAC 2, 4
            DELAY s(1/200)-4
            DAC 2, 0
            DELAY s(1/200)-1
-           DBNZ V10, ULTRAREP ;get V10 from script
+           DBNZ V10, ULTRAREP ;V10 IS DEFINED IN THE SCRIPT
            HALT
 
-;US (DAC2) DUTYCYCLE 100Hz, MYON (DAC1) TTL for 15s and RELEASE DAC3 @4s
+;US (DAC2) 100Hz FOR XY WIDTH AND MOVE ISOMED @ V11
+ULTRAISO: 'm     ;duty cycle for US (DAC2) @100Hz and move isomed
+ULTRAMOV:   DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+            DBNZ V11, ULTRAMOV
+
+            DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+
+            DIGOUT [....ii..]
+
+ULTRAMO2:   DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+            DBNZ V14, ULTRAMO2
+            HALT
+
+
+;US (DAC2) DUTYCYCLE 100Hz, MYON (DAC1) TTL for the entire XY WIDTH & RELEASE DAC3 @ x
 USMYION: 'H DAC 1, 4  ; TTL from DAC1 and duty cycle @ 100Hz DAC2 for US
-           MOVI V3, 399
 USM:       DAC 2, 4
            DELAY s(1/200)-4
            DAC 2, 0
            DELAY s(1/200)-1
-           DBNZ V3, USM
+           DBNZ V13, USM
 
            DAC 2, 4
            DELAY s(1/200)-4
            DAC 2, 0
            DELAY s(1/200)-1
-           DAC 3, 0   ; TTL DAC 3 goes LOW so trigger the box for the block
+           DAC 3, 0   ;TTL DAC 3 LOW SO TRIGGER THE BOX FOR THE BLOCKER
 
-           MOVI V3, 1100
-USMO2:   DAC 2, 4
+USMO2:      DAC 2, 4
             DELAY s(1/200)-4
             DAC 2, 0
             DELAY s(1/200)-1
-            DBNZ V3, USMO2
-            HALT
+            DBNZ V17, USMO2
 
-           DAC 1, 0 ; Turn DAC 1 LOW
-           HALT
-
-;US (DAC2) 100Hz FOR 15s AND MOVE ISOMED @sec 4
-ULTRAISO: 'm    MOVI V2, 399 ;duty cycle for US (DAC2) @100Hz for 15s and trigger Isomed at 4s
-ULTRAMOV:   DAC 2, 4
-            DELAY s(1/200)-4
-            DAC 2, 0
-            DELAY s(1/200)-1
-            DBNZ V2, ULTRAMOV
-
-            DAC 2, 4
-            DELAY s(1/200)-4
-            DAC 2, 0
-            DELAY s(1/200)-1
-
-            DIGOUT [....ii..]
-
-            MOVI V2, 1100
-ULTRAMO2:   DAC 2, 4
-             DELAY s(1/200)-4
-             DAC 2, 0
-             DELAY s(1/200)-1
-             DBNZ V2, ULTRAMO2
-             HALT
+          DAC 1, 0 ; DAC1 LOW
+          HALT
 
 
-;US (DAC2) 100Hz and TTL MYON (DAC1) FOR 15s AND MOVE ISOMED @sec 4
+;US (DAC2) 100Hz and TTL MYON (DAC1) FOR XY WIDTH AND MOVE ISOMED @sec V11
 MYOUSIMO: 'J  DAC 1, 4  ;TTL from DAC1 and THEN duty cycle 100Hz DAC2 for US
-            MOVI V2, 399
-ULTRAMU:   DAC 2, 4
+ULTRAMU:    DAC 2, 4
             DELAY s(1/200)-4
             DAC 2, 0
             DELAY s(1/200)-1
-            DBNZ V2, ULTRAMU
+            DBNZ V11, ULTRAMU ;REP CYCLE TILL FIRST TRIGGER OF ISOMED
 
             DAC 2, 4
             DELAY s(1/200)-4
@@ -118,34 +120,78 @@ ULTRAMU:   DAC 2, 4
             DELAY s(1/200)-1
             DIGOUT [....ii..]
 
-            MOVI V2, 1100
 ULTRAMU2:   DAC 2, 4
             DELAY s(1/200)-4
             DAC 2, 0
             DELAY s(1/200)-1
-            DBNZ V2, ULTRAMU2
-            DAC 1, 0    ;report dac 1 to zero
+            DBNZ V14, ULTRAMU2 ;Loop till end of XY width'
+            DAC 1, 0    ;report DAC 1 to zero
             HALT
 
-;US (DAC2) 100Hz and TTL MYON (DAC1) FOR 15s AND MOVE ISOMED @sec 4
-MYOUSIMO: 'J  DAC 1, 4  ;TTL from DAC1 and THEN duty cycle 100Hz DAC2 for US
 
-            ULTRAMU:    DAC 2, 4
-                        DELAY s(1/200)-4
-                        DAC 2, 0
-                        DELAY s(1/200)-1
-                        DBNZ V11-1, ULTRAMU ;REP CYCLE TILL FIRST TRIGGER OF ISOMED
+;DAC1 TTL, US (DAC2) 100Hz FOR XY WIDTH AND MOVE ISOMED TWICE
+MYUSISOS: 'S   ;TTL from DAC1 and THEN duty cycle 100Hz DAC2 for US
+ULTRAUS:   DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+            DBNZ V11, ULTRAUS ;REP CYCLE TILL FIRST TRIGGER OF ISOMED
 
-                        DAC 2, 4
-                        DELAY s(1/200)-4
-                        DAC 2, 0
-                        DELAY s(1/200)-1
-                        DIGOUT [....ii..]
+            DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+            DIGOUT [....ii..]
 
-ULTRAMU2:               DAC 2, 4
-                        DELAY s(1/200)-4
-                        DAC 2, 0
-                        DELAY s(1/200)-1
-                        DBNZ V10-V11, ULTRAMU2 'Repeat till end of XY width'
-                        DAC 1, 0    ;report dac 1 to zero
-                        HALT
+ULTRAUSS:  DAC 2, 4
+          DELAY s(1/200)-4
+          DAC 2, 0
+          DELAY s(1/200)-1
+          DBNZ V15, ULTRAUSS ;Repeat till V12 second time trigger ISOMED
+
+          DAC 2, 4
+          DELAY s(1/200)-4
+          DAC 2, 0
+          DELAY s(1/200)-1
+          DIGOUT [....ii..]
+
+ULTRAUSC:   DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+            DBNZ V16, ULTRAUSC ;Repeat till end of XY width
+            HALT
+
+;US (DAC2) 100Hz and TTL MYON (DAC1) FOR XY WIDTH AND MOVE ISOMED TWICE
+MYUSISOS: 'k  DAC 1, 4  ;TTL from DAC1 and THEN duty cycle 100Hz DAC2 for US
+ULTRAMUS:   DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+            DBNZ V11, ULTRAMUS ;REP CYCLE TILL FIRST TRIGGER OF ISOMED
+
+            DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+            DIGOUT [....ii..]
+
+ULTRAMD:  DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+            DBNZ V15, ULTRAMD ;Repeat till V12 second time trigger ISOMED
+
+            DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+            DIGOUT [....ii..]
+
+ULTRAMH:    DAC 2, 4
+            DELAY s(1/200)-4
+            DAC 2, 0
+            DELAY s(1/200)-1
+            DBNZ V16, ULTRAMH ;Repeat till end of XY width
+            DAC 1, 0    ;report dac 1 to zero
+            HALT

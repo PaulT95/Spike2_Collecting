@@ -7,7 +7,7 @@ var mvcVH%, xyVH%;
 var lrampCH%, urampCH%, fdbckCH%;
 var repXYcycle% := 1; 'repetitive contractions on XY view
 var allXY%;
-var n% = 1; 'var for IDLE for checking how many contraction'
+var n% := 1; 'var for IDLE for checking how many contraction'
 'Channel duplication / calculations
 'var totalfdbckCH%, VLrmsCH%, VMrmsCH%, RFrmsCH%;
 'VARS to pass to the SEQUENCER '
@@ -52,7 +52,7 @@ var mv%, xyv%; ' mvcv%; MVC are now integrated in the xy view
 var winwidth% := 70;
 
 'Equipment Check variables
-var uscheck%, DAC1_Myon%, tappercheck%, motioncapcheck%, isomedcheck%, shorttap%, savetrue%, DAC3%;
+var uscheck%, DAC1_Myon%, tappercheck%, motioncapcheck%, isomedcheck%, shorttap%, savetrue%, DAC3%, isomedcheck2%;
 var samplekey$; 'selects samplekey based on selected variables from above
 var idlesave% := 0;
 
@@ -167,9 +167,10 @@ Func Idle%()
           if (x_dynamic% = 1) then XRange(relativetime-1, relativetime +2); endif'Moving win in XY for following trace on X with Y  fixed
         XYAddData(fdbckCH%, relativetime, lastdata);
       endif;  'draw the x value as relative time to be able to have static ramps
-      if (mod(relativetime, xywidth%) = n% then 'if repetitive, re-Send the sequencer instruct'
+      if ((relativetime/xywidth%) >= n%) then 'if repetitive, re-Send the sequencer instruct'
         SetUp_VarSeq%(); 'Send values to Sequencer for the new cycle
         SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
+        'XYWindow%(); 'Reset XY view in case too many points make window slow'
         n% := n% + 1; 'Potentially delete old point in the XY if becomes too slow'
       endif
         return 1;
@@ -227,7 +228,7 @@ end;
 Func New%()
 
     FileOpen("",6,1,"Select Sampling config file"); 'open dialog to load sampling config file
-    SampleSequencer("D:/Tim/Spike_Config/fs_sequencer.pls");     'sets sequencer file to use
+    SampleSequencer("D:/Paolo/Spike_Config_v15_beta/fs_sequencer_adaptable.pls");     'sets sequencer file to use
     Message("WARNING! DISABLE ISOMED TRIGGER! Depending on the selected program rotation might occur.");
     'FileOpen("D:/Paolo/config_v8_beta/fs_sampling_config_new.s2cx", 6);    'sets sampling config to use
 
@@ -584,28 +585,31 @@ Func SetEquipment%()
     DlgCheck(3, "Ultrasound");
     'DlgCheck(3, "Tendon Tapper");
     DlgCheck(4, "Motion Capture");
-    DlgCheck(5, "Isomed");
-    DlgCheck(6, "Short tap");
-    DlgCheck(7, "IMUs (Myon) / DAC1");
-    DlgCheck(8, "Blocker / DAC3");
-    DlgLabel(9, "Note that only each option on its own, everything, and all but the isomed will result in sequencer output. \nIsomed triggered after 4 seconds, Ultrasound at max 100 Hz");
-
+    DlgCheck(5, "Isomed 1 Rot");
+    DlgCheck(6, "Isomed 2 Rot");
+    DlgCheck(7, "Short tap");
+    DlgCheck(8, "IMUs (Myon) / DAC1");
+    DlgCheck(9, "Blocker / DAC3");
+    DlgLabel(10, "Note that only each option on its own, everything, and all but the isomed will result in sequencer output. \nIsomed triggered after 4 seconds, Ultrasound at max 100 Hz");
+    DlgLabel(11, "In case the Motion Capture needs a TTL, I suggest that you use DAC1. \nShort Tap not set here")
     'DlgShow(throaway%, uscheck%, tappercheck%, motioncapcheck%, isomedcheck%, savetrue%, shorttap%, throaway%);
-    DlgShow(throaway%, savetrue%, uscheck%, motioncapcheck%, isomedcheck%,  shorttap%, DAC1_Myon%, DAC3%, throaway%);
+    DlgShow(throaway%, savetrue%, uscheck%, motioncapcheck%, isomedcheck%, isomedcheck2%, shorttap%, DAC1_Myon%, DAC3%, throaway%, throaway%);
 
     docase
-        case shorttap% = 1 then samplekey$ := "j";
+        'case shorttap% = 1 then samplekey$ := "j";
         'case tappercheck% = 1 and uscheck% = 0 and motioncapcheck% = 0 and isomedcheck% = 0 then samplekey$ := "t";    'tendontapper only
-        case uscheck% = 1 and DAC1_Myon% = 0 and DAC3% = 0  and motioncapcheck% = 0 and isomedcheck% = 0 then  samplekey$ := "u";    'ultrasound only
+        case uscheck% = 1 and DAC1_Myon% = 0 and DAC3% = 0  and motioncapcheck% = 0 and isomedcheck% = 0 and isomedcheck2% = 0 then  samplekey$ := "u";    'ultrasound only as XY WIDTH * rep
         'case motioncapcheck% = 1 and tappercheck% = 0 and isomedcheck% = 0 and uscheck% = 0 then samplekey$ := "v";    'vicon only
-        case isomedcheck% = 1 and motioncapcheck% = 0 and uscheck% = 0 and DAC1_Myon% = 0 then samplekey$ := "i";    'isomed rotation only
+        case uscheck% = 0 and DAC1_Myon% = 0 and DAC3%  = 0 and motioncapcheck% = 0 and isomedcheck% = 1 and isomedcheck2% = 0 then samplekey$ := "i";    'isomed rotation only
         'case uscheck% = 1 and tappercheck% = 1 and motioncapcheck% = 1 and isomedcheck% = 0 then samplekey$ := "1";    'all but isomed rotation
         'case uscheck% = 1 and tappercheck% = 1 and motioncapcheck% = 1 and isomedcheck% = 1 then samplekey$ := "2";    'all
-        case uscheck% = 1 and DAC1_Myon% = 0 and motioncapcheck% = 0 and isomedcheck% = 1  then samplekey$ := "m"; '100Hz duty cycle for all system using BNC splitter, dynamometer will move at after 4
-        case uscheck% = 1 and DAC1_Myon% = 1 and motioncapcheck% = 0 and isomedcheck% = 0 and DAC3%  = 1 then samplekey$ := "H";
-        case uscheck% = 1 and DAC1_Myon% = 1 and motioncapcheck% = 0 and isomedcheck% = 1 and DAC3%  = 0 then samplekey$ := "J";
-        'case uscheck% = 1 and DAC1_Myon% = 1 and motioncapcheck% = 0 and isomedcheck% = 1 and DAC3%  = 1 then samplekey$ := "n"
+        case uscheck% = 1 and DAC1_Myon% = 0 and DAC3%  = 0 and motioncapcheck% = 0 and isomedcheck% = 1 and isomedcheck2% = 0 then samplekey$ := "m"; '100Hz duty cycle for all system using BNC splitter, dynamometer will move at after 4
+        case uscheck% = 1 and DAC1_Myon% = 1 and DAC3%  = 1 and motioncapcheck% = 0 and isomedcheck% = 0 and isomedcheck2% = 0 then samplekey$ := "H"; 'Only for the blocker for my study'
+        case uscheck% = 1 and DAC1_Myon% = 1 and DAC3%  = 0 and motioncapcheck% = 0 and isomedcheck% = 1 and isomedcheck2% = 0 then samplekey$ := "J";
+        case uscheck% = 1 and DAC1_Myon% = 0 and DAC3%  = 0 and motioncapcheck% = 0 and isomedcheck% = 1 and isomedcheck2% = 1  then samplekey$ := "S";
+        case uscheck% = 1 and DAC1_Myon% = 1 and DAC3%  = 0 and motioncapcheck% = 0 and isomedcheck% = 1 and isomedcheck2% = 1  then samplekey$ := "k";
 
+        'case uscheck% = 1 and DAC1_Myon% = 1 and motioncapcheck% = 0 and isomedcheck% = 1 and DAC3%  = 1 then samplekey$ := "n"
         else samplekey$ := "n"; Message("No sequener instruction found");    'just instructs the sequencer to HOLD
     endcase;
     return 1;
@@ -623,13 +627,14 @@ Func Snippet%()
     View(mainVH%);
     n% := 1; 'reset number of contractions/XY performed'
 
-    'Pass values to vars of the sequencer'
     'SampleSeqVar(10,allXY%*100); 'Set to the sequencer V10 the duration of the duty cycle depending on XY view'
-    SetUp_VarSeq%(); 'Firt snippet Send Vars to sequencer'
     Cursor(0, MaxTime());
     CursorVisible(0,1);
     CursorActive(0,14, 31, 0, "", "", 1);   'Data points --> keyboard. Make cursor 0 active to search keyboard
     'easy to navigate everytime you snippet'
+
+    'Pass values to vars to the sequencer'
+    SetUp_VarSeq%(); 'Firt snippet Send Vars to sequencer'
 
     'you can't rely on the timing of the cursor positions for post-analysis, therefore save an extra second beforehand,
     'such that you can always refer to your event or TTL channels as common signal
@@ -647,11 +652,19 @@ end;
 
 'FUNCTION TO CHECK LAST XY view AND SETUP THE SEQUENCER BEFORE SNIPPET**********
 Func SetUp_VarSeq%()
-  'Var 10 = US
+'Var 10 = US
+
+if samplekey$ = "i" then SampleSeqVar(11,(TP_Isomed[0]*1000)-1); 'If only ISOMED fix to ms as it won´t be a loop but just a delay
+ else
   SampleSeqVar(10,xywidth%*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
-  SampleSeqVar(11,TP_Isomed[1]*100);
-  SampleSeqVar(12,TP_Isomed[2]*100);
-  SampleSeqVar(13,TP_DAC3*100);
+  SampleSeqVar(11,(TP_Isomed[0]*100)-1);
+  SampleSeqVar(12,(TP_Isomed[1]*100)-1);
+  SampleSeqVar(13,(TP_DAC3*100)-1);
+  SampleSeqVar(14,((xywidth%-TP_Isomed[0])*100));
+  SampleSeqVar(15,((TP_Isomed[1]-TP_Isomed[0])*100)-1);
+  SampleSeqVar(16,((xywidth%-TP_Isomed[1])*100)); 'There will be always an "error" of <~3ms when Repeating because of the Clock of CPU
+  SampleSeqVar(17,((xywidth%-TP_DAC3)*100)); 'There will be always an "error" of <~3ms when Repeating because of the Clock of CPU
+ endif
   return 1;
 end
 
@@ -663,15 +676,16 @@ Func RepXY%()
     DlgLabel(2,"Be careful if you do many contractions I suggest to tick Dynamic X Range in XY View for having better feedback for the subjects");
     DlgLabel(3, "If you tick US in Equipment Options it will last as long as the XY overall, for the rest, program the Sequencer"); 'TO DO, pass instruct to sequencer for trigger isomed
     DlgInteger(4, "Repetition", 1, 60);    'there are certain cases when this is annoying and you need to close and open the dialog again
-    DlgReal(5, "TimePoint ISOMED 1",TP_Isomed[1], mxywidth%);
-    DlgReal(6, "TimePoint ISOMED 2",TP_Isomed[2], mxywidth%);
-    DlgReal(7, "TimePoint DAC 3",TP_DAC3, mxywidth%);
+    DlgReal(5, "TimePoint ISOMED 1",1, xywidth%);
+    DlgReal(6, "TimePoint ISOMED 2",1, xywidth%);
+    DlgReal(7, "TimePoint DAC 3 OFF",TP_DAC3, xywidth%);
     DlgLabel(8, "CAUTION! the snippet is working based on the X-Range value and not the last TimePoint value!"); 'TO DO, pass instruct to sequencer for trigger isomed
 
-    DlgShow(throaway%, throaway%, throaway%, repXYcycle%,TP_Isomed[1],TP_Isomed[2],TP_DAC3,throaway%);
+    DlgShow(throaway%, throaway%, throaway%, repXYcycle%,TP_Isomed[0],TP_Isomed[1],TP_DAC3,throaway%);
     'SORT'
     ArrSort(TP_Isomed); 'In case someone wants to be stupid'
-
+    'PrintLog(TP_Isomed[0]);
+    SetUp_VarSeq%();
     XYWindow%(); 'Update XY if you change the number of reps'
     return 1;
 end
@@ -772,8 +786,8 @@ Func SetAnalysisOpts%()
     DlgCreate("Select analysis");
     DlgLabel(1, "Select what analyse of the feedback channel: ");
     DlgList(2, "Choose", listAnalysis$[]); 'Add the list to the dialog ok% := DlgShow(which%); 'Display dialog, wait for user
-    DlgReal(3,"Set Position Cursor 2 relative to 0",PosCursor[1]);
-    DlgReal(4,"Set Position Cursor 3 relative to 0",PosCursor[2]);
+    DlgReal(3,"Set Position Cursor 2 relative to 0",0,PosCursor[1]);
+    DlgReal(4,"Set Position Cursor 3 relative to 0",0,PosCursor[2]);
     DlgShow(throaway%,  which%, PosCursor[1], PosCursor[2]);
     quickAnalysis%(which%);
 
@@ -812,8 +826,8 @@ Func quickAnalysis%(which%)
 
   'Always set cursor 2 and 3 active to follow cursor 0 so easy to navigate and perform analysis each time you snippet'
   'Set cursor 2 and 3 in active mode
-  CursorActive(2,16, 0, "Cursor(0)+"PosCursor[1]);   'Expression
-  CursorActive(3,16, 0, "Cursor(0)+"PosCursor[2]);   'Expression
+  CursorActive(2,16, 0, "Cursor(0)+PosCursor[1]");   'Expression
+  CursorActive(3,16, 0, "Cursor(0)+PosCursor[2]");   'Expression
 
   'Create two horizontal cursor for max and min'
   'HCursorDelete(-1); 'Delete all cursors otherwise will add tons of them
