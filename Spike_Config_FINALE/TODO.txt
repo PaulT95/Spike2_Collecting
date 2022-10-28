@@ -1,0 +1,19 @@
+VAR    V10; ;USTime ;set var for US only
+VAR    V11; ;ISOMED 1
+VAR    V12; ;ISOMED 2
+VAR    V13; ;DAC 3 (blocker)
+VAR    V14; ;ISOMED 1 - XY
+VAR    V15; ;ISOMED 1 - ISOMED 2
+VAR    V16; ;ISOMED 2 - XY
+
+
+
+V11 = fix only isomed
+
+
+fix passing variables -1
+
+
+TO DO
+
+rimuovere istruzioni vecchie!!!
