@@ -6,7 +6,7 @@ You can create or import specific ramps to follow via a live feedback (in this c
 You can snippet single shot based on the XYwidth you set in the XY view settings (default 15s). It exports as MAT file all the channels from Cursor(0) when you clicked snippet to Cursor(0) + (X range + 2s). 
 I am lazy to describe eveything but many other functions are included, but you can use it as you prefer and change the code. 
 
-PS: here the frequency set in the Config File is 2000Hz so when exporting you will have all channels with X width*2000 points
+PS: here the frequency set in the Config File is 2000Hz so when exporting you will have all <b>RAW</b> channels with X width*2000 points
 
 
 Thanks to my first German Office Mate **[Tobi (the) Weingarten](https://github.com/vinjardin)** 🍷 who creates the first version!!!
