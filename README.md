@@ -3,7 +3,7 @@ Spike2 script for collecting and sampling with an user-friendly interface. The m
 
 You can change the sequencer to create specific TTL or DutyCycle signal and trigger the devices, it depends what you need
 You can create or import specific ramps to follow via a live feedback (in this case you can chose the channel like Torque, Force, whatever)
-You can snippet single shot based on the XYwidth you set in the XY view settings (default 15s). It exports as MAT file all the channels from Cursor(0) when you clicked snippet to Cursor(0) + (X range + 2s), so one second you see feedback in the XY view and one second after the end of the XY view. 
+You can snippet single shot based on the XYwidth you set in the XY view settings (default 15s). It exports as MAT file all the channels from Cursor(0) when you clicked snippet to Cursor(0) + (XY width)+ 1s, so one second you see feedback in the XY view and one second after the end of the XY view. 
 You can either import a txt file with two columns (X and Y values) and plot them for specifics ramp. See matlab example code for create sinewave ramps to be plot. I reccomend to not create milions of points
 The sequencer is flexible now, so when you change the values in the "XY rep and Sequencer Config" this will be updated in background in the sequencer, so you don't have everytime to re-program the sequencer. 
 THE GAME MODE is available;)
