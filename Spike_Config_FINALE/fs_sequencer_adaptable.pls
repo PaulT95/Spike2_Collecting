@@ -9,6 +9,7 @@ VAR    V16; ;ISOMED 2 - XY
 VAR    V17; ;DAC 3 - XY
 ;I NEED ALL THEM BECAUSE I CAN'T DO CALCULATIONS IN THE LOOP AS WELL AS IT WILL TAKE ticks!
 
+DAC    0, 5    ;Power up the Goniometer
 DAC    1, 0    ;IMUs/EMGs system --> this is a TTL, var2
 DAC    2, 0    ;ultrasound --> this is a TTL with duty cycle of 100Hz, var1
 DAC    3, 0    ;DAC 3 set to zero --> TTL for relay circuit, button switch <10us, var3
