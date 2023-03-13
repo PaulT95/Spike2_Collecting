@@ -1,3 +1,8 @@
+%%Simple script to create a matrix with 2 columns to be plotted in Spike2 as a trace
+% Col 1 = x (time points), Col 2 = y (whatever)
+%%%%%
+% © Paolo Tecchio
+% Email: paolo.tecchio@rub.de
 
 %must be columns
 %x points or time points
