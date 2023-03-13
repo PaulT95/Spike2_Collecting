@@ -1,3 +1,5 @@
+'Script ONLY for saving single trials in MAT from a spike2 file
+'BE CAREFUL- check line 38 (Cursor(0)+16). Change 16s with the window amplitude you need!
 'GLOBAL VARIABLE DECLARATIONS*****************************************************
 
 var throaway%;
