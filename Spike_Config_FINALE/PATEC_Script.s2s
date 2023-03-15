@@ -131,7 +131,7 @@ Proc DisplayButtons()
         'ToolbarEnable(15, 0);
         ToolbarEnable(18, 0);
         ToolbarEnable(19, 1);
-        ToolbarEnable(20, 0);       
+        ToolbarEnable(20, 0);
 
     case mainVH% >= 0 then
         ToolbarEnable(1, 0);
@@ -580,7 +580,7 @@ end;
 Func SetEquipment%()
 
     DlgCreate("Select Capture Equipment");
-    DlgLabel(1, "Devices that will be used / triggered during 15s snippet");
+    DlgLabel(1, "Devices that will be used / triggered during XY width duration snippet");
     DlgCheck(2, "Save Snippet");
     DlgCheck(3, "Ultrasound");
     'DlgCheck(3, "Tendon Tapper");
