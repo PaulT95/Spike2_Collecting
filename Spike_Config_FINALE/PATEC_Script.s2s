@@ -2,6 +2,7 @@
 'View handles
 var mainVH% := 0;
 var mvcVH%, xyVH%;
+var drawView%;                                              				'Result view for drawing ramp
 
 'XY-View channels and duration
 var lrampCH%, urampCH%, fdbckCH%;
@@ -77,7 +78,18 @@ var minMVC := 0;
 var maxMVC := 0;
 var llrampCH%, uurampCH%; 'just XY chan for MVC in the two directions'
 
+'******************************************************'Draw ramp based on waveplay window and then plot it in the XY
+var pWaveRate := 200;                                  				'Waveform output rate
+var pWaveInt;                                           				'Sample interval (1/rate)
+var pWavePts%;                                          				'Number of data points                                        				'DAC for output
+var oldX%;                                              				'Previous mouse position (for interpolation) 
+var oldY;
+var outMax := 5;														'DAC full scale value
+var outZero := 0;                                                       'DAC zero value
+var wUnits$ := "Volts";                                                   'Units
+var TraceToPlot[1];                                                     'initialize to 1 and then resize
 'SET FILE PATH AND CREATE TOOLBAR**************************************************
+if App(-1)<701 then Message("This script needs at least Spike2 version 7.01"); halt endif;	'Checks for the latest version of Spike2
 FilePathSet("", 0, "Where do you want to save everything?");
 DoToolbar();
 
@@ -86,8 +98,9 @@ DoToolbar();
 Proc DoToolbar()
     ToolbarClear();
     ToolbarSet(0, "", Idle%);
+    ToolbarSet(25,"Draw Trace",MakeWave%);
     ToolbarSet(22, "Start Sampling", New%);
-
+        
     ToolbarSet(20, "Change View", ChangeView%);
     ToolbarSet(19, "Rep XY/Seq Config", RepXY%);
     ToolbarSet(18, "XY-Ramp", XYRampSettings%);
@@ -107,7 +120,6 @@ Proc DoToolbar()
     ToolbarSet(3, "StopSampling", StopSampling%);
     ToolbarSet(2, "SaveEverything", SaveData%);
     ToolbarSet(-1, "Quit");
-
     DisplayButtons();
     Toolbar("Collect some awesome data!!!",231);
 end;
@@ -129,9 +141,10 @@ Proc DisplayButtons()
         ToolbarEnable(11, 0);
         ToolbarEnable(13, 0);
         'ToolbarEnable(15, 0);
-        ToolbarEnable(18, 0);
+        ToolbarEnable(18, 1);
         ToolbarEnable(19, 1);
         ToolbarEnable(20, 0);
+        
 
     case mainVH% >= 0 then
         ToolbarEnable(1, 0);
@@ -252,7 +265,7 @@ Func XYRampSettings%()
     DlgChan(1, "Select feedback channel", 0x40000);
     DlgReal(2, "Select X-Range", 0, mxywidth);     'probably there will be no cases where more than 60 seconds are needed
     DlgReal(3, "Select allowed offset", 0.00, 0.15);
-    DlgList(4, "Select what to do", "Ramp 1|Ramp 2|Ramp 3|Import Array|MVC");
+    DlgList(4, "Select what to do", "Ramp 1|Ramp 2|Ramp 3|Import Array|MVC|Hand Draw");
 
     'ramp appearance settings
     var xp1% := 6;
@@ -296,8 +309,10 @@ Func XYRampSettings%()
 
     DlgAllow(0x3ff, 0, ChangeXYSettingsDLG%);    'calls changexysettingsdlg function everytime a change in the xy-settings dialog was made
 
-    DlgShow(fdbkdata%, xywidth, allowedoffset, rampnumber%,  genxy, fdbkoffset, throaway%, dc, factor, sc%, storecramp%, vline, game_mode%);
-    XYWindow%();    'should add after in the function change xy setting dlg but item that change doesn´t make sense
+    throaway% := DlgShow(fdbkdata%, xywidth, allowedoffset, rampnumber%,  genxy, fdbkoffset, throaway%, dc, factor, sc%, storecramp%, vline, game_mode%);
+    if throaway% > 0 then
+        XYWindow%();    'should add after in the function change xy setting dlg but item that change doesn´t make sense
+    endif
     return 1;
 end;
 
@@ -418,12 +433,28 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
         range := rampmax * allowedoffset;    'feedback offset calculation
     endif
     ' RAMP 4 (MVC)
-    if rampnumber% = 4 then
+    if rampnumber% = 4 or rampnumber% = 5 then
         DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23); 'Can't put more numbers in a single row
         DlgEnable(0, 24, 25, 26, 27, 29, 30);
         DlgEnable(1,28);
         factor := DlgValue(28);
         'Maybe open a dialog to put an ipotetical value '
+    endif
+    if rampnumber% = 5 then 'RAMP 5 (Hand draw)
+
+        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
+        DlgEnable(0, 22, 23, 24, 25, 26, 27);
+
+        'sc% := DlgValue(29);
+        factor := DlgValue(28);
+    
+        resize Import_rampY_scale [len(TraceToPlot)];
+        ArrConst(Import_rampY_scale,TraceToPlot) ; 'create a scale Y array so the array multiplication doesn't affect the original one
+        ArrMul(Import_rampY_scale, factor); 'scale the y values in case you want to change the intensity, but remember you are changing the original file
+
+        rampmax := Import_rampY_scale[Max(Import_rampY_scale)];
+        rampmin := Import_rampY_scale[Min(Import_rampY_scale)];
+        range := rampmax * allowedoffset;    'feedback offset calculation
     endif
 
     XYWindow%();    'update the xy-window everytime
@@ -529,7 +560,14 @@ Func XYWindow%()
 
     endif;
 
-    'Correct YRange for the first 4 ramps as they use rampmin and rampmax
+    if rampnumber% = 5 then 'draw the boundiers of the drawn trace   
+        for x% := 0 to len(Import_rampY_scale)-1 do
+            XYAddData(lrampCH%, x%/pWaveRate, Import_rampY_scale[x%]-range);
+            XYAddData(urampCH%, x%/pWaveRate, Import_rampY_scale[x%]+range);
+        next;    
+    endif
+
+    'Correct YRange for theese ramps as they use rampmin and rampmax
     YRange(-1, (rampmin-range)*1.15, (rampmax+range)*1.15);    'min/max of all ramp values + 20% for nicer view
 
     if rampnumber% = 4 then 'SET THE HORIZONTAL LINES LIMITS for MVC
@@ -558,7 +596,7 @@ Func XYWindow%()
     endif
 
    XRange(0,xywidth); 'in case you are using other ramps
-
+   
    return 1;
 end;
 
@@ -858,3 +896,94 @@ Func DAC3OFF%()
   ToolbarSet(8, "DAC3 ON", DAC3ON%);
   return 1;
 end
+
+'MAKE HAND DRAW TRACES TO PLOT *************************************************************************
+Func MakeWave%()                                               			'Function to generate waveform 
+DlgCreate("Playwave view parameters");                              			'Parameters dialog
+DlgReal(1,"Time Points Resolution / Frequency (Hz)",1,100000);
+DlgReal(2,"Playwave duration (s)",0.01,xywidth);
+DlgReal(3, "Channel Offset", 0, 1000);
+DlgReal(4, "Channel Full Scale",0.0001,1000000);
+DlgString(5, "Units",10);
+throaway% := DlgShow(pWaveRate,xywidth,outZero,outMax,wUnits$);    	'Return variables
+if throaway% > 0 then
+    View(mainVH%); 
+    ToolbarSet(25, "Draw", AddPWave%);
+    
+	if drawView% < 0 then                                            		'Clear any existing result views
+		View(drawView%);
+		FileClose(0,-1);
+		drawView% := 0;
+	endif;
+	pWaveInt := 1.0/pWaveRate;                                   		'Get sample interval
+    pWavePts% := xywidth*pWaveRate;                          		'Get number of points to output
+    drawView% :=SetResult(1,pWavePts%,pWaveInt,0,"PlayWave","s");    		'Set up result view with appropriate bin size etc
+    DrawMode(1,2);                                                      'Draw in waveform mode
+    YRange(1,outZero - (outMax-outZero),outMax);
+	ChanUnits$(1,wUnits$);	
+    Window(0,0,100,100);
+    FrontView(drawView%);
+	ToolbarMouse(drawView%,0,4,5,Down%,Up%,Move%);                   		'Set up mouse capture requiring shift and left mouse button to activate functions
+    ToolbarText("Keep clicking Shift with the left click for drawing. Click 'Draw' to Plot the waveform in the XY view");
+        
+endif;
+return 1;
+end;
+
+Func AddPWave%();
+    'get data from the sketch and then close the view
+    resize TraceToPlot [Len(View(drawView%).[])]; 'resize The array to plot
+    ArrConst(TraceToPlot,View(drawView%,1).[]); '.[] to get elements in the results view as array
+    View(drawView%);
+    FileClose(0,-1);
+
+    View(mainVH%); 
+    ToolbarSet(25,"Draw Trace",MakeWave%);
+    ToolbarText("Collect awesome data!");
+ 
+    return 1;
+end;
+Func Down%(vh%,chan%,x,y,flags%)                                 'Function for left mouse button press
+if XtoBin(x) >= 0 and XToBin(x) <= Len([])-1 then                	'If within range
+    [XToBin(x)] := y;                                            		'Set bin at mouse x position to mouse y position
+    oldX% := XtoBin(x);                                          	'Update variables with last mouse position
+    oldY := y;
+endif;
+return 1;
+end;
+
+
+Func Up%(vh%,chan%,x,y,flags%)                                   		'Function for left mouse button up
+return 1;
+end;
+
+Func Move%(vh%,chan%,x,y,flags%)                                		'Function for mouse movement
+var bin%;                                                       		'Current bin position of mouse
+var pts%;                                                       		'Number of points moved since last time function called
+
+bin% := XToBin(x);                                              		'Get bin position
+if bin% >= 0 and bin% <= Len([])-1 then                         		'If within area
+    if bin% <> oldX% then                                       		'Has it moved?
+        pts% := Abs(bin%-oldX%);                                		'Count points moved since past call
+        var line[pts%+1];                                       		'Declare array to contain interpolated points
+            if bin% > oldX% then                                		'If mouse moved right (positive change)
+                ArrConst(line[1:pts%],(y-oldY)/pts%);           		'Fill array with incremental y change per bin
+                ArrIntgl(line[]);                               		'Integrate to get slope
+                ArrAdd(line[],oldY);                            		'Add starting level to array
+                ArrConst([oldX%:pts%],line[]);                  		'Add into result view
+            else		
+                ArrConst(line[1:pts%],(oldY-y)/pts%);           		'Same process for moving left (negative change)
+                ArrIntgl(line[]);		
+                ArrAdd(line[],y);		
+                ArrConst([bin%:pts%],line[]);		
+            endif;		
+    else		
+        [XToBin(x)] := y;                                       		'If not moved in x, update current bin with y mouse position
+    endif;		
+    oldX% := bin%;                                              		'Update variables with mouse position
+    oldY := y;
+endif;
+return 1;
+end;
+
+
