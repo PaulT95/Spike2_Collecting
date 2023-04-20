@@ -46,7 +46,7 @@ var sc% := 0;    'selected column of matrix which will be stored to during idle
 var dc[5];     'display column for biofeedback
 var factor := 1;
 
-var rampnumber%;    'to distinguish between ramp1, ramp2 and so on (currently only two ramps, ramp 3 as curve ramp, ramp 4 import array, ramp5 MVC)
+var rampnumber%;    'to distinguish between ramp1, ramp2 and so on (currently only two ramps, ramp 3 as curve ramp, ramp 4 import array, ramp5 MVC, ramp6 hand draw)
 
 'View options
 var mv%, xyv%; ' mvcv%; MVC are now integrated in the xy view
@@ -54,20 +54,19 @@ var winwidth% := 70;
 
 'Equipment Check variables
 var uscheck%, DAC1_TTL%, tappercheck%, motioncapcheck%, isomedcheck%, shorttap%, savetrue%, DAC3%, isomedcheck2%;
-var samplekey$; 'selects samplekey based on selected variables from above
+var samplekey$; 'select samplekey based on selected variables from above for the sequencer
 var idlesave% := 0;
 
 'Analysis options '
 var listAnalysis$[7] := {"Nothing","Peak2Peak","Area","Mean","Max","Min","SD"};
 var which% := 0;
-'var PosCursor[2] := {8,10};
-'NameFile variable for prompt and send the command to SaveEco.exe and saving automatically the US data
+'NameFile variable for prompt and send the command to SaveEco.exe and saving automatically the US data and the mat file
 var  NameFiles$;
 
 'var to store file imported (txt) for designed a personalized ramp
 var fh%;
 var storeImp[30000]; 'variable temp for storing data ramp display of ramp2(from snippet)
-var Import_rampX[1], Import_rampY[1], Import_rampY_scale[1]; 'just one element as it will resize based on the points imported
+var Import_rampX[1], Import_rampY[1], Import_rampY_scale[1]; 'just one element as it will resize based on the points imported from the TXT to plot
 'variable for drawing vertical dashed line'
 var vline[2] := {0, 0};
 var vertLine%, vertLine2%;
@@ -79,15 +78,15 @@ var maxMVC := 0;
 var llrampCH%, uurampCH%; 'just XY chan for MVC in the two directions'
 
 '******************************************************'Draw ramp based on waveplay window and then plot it in the XY
-var pWaveRate := 200;                                  				'Waveform output rate
 var pWaveInt;                                           				'Sample interval (1/rate)
-var pWavePts%;                                          				'Number of data points                                        				'DAC for output
+var pWaveRate := 200;                                  				    'Points resolution for drawing 
+var pWavePts%;                                          				'Number of data points                                    
 var oldX%;                                              				'Previous mouse position (for interpolation) 
 var oldY;
 var outMax := 5;														'DAC full scale value
 var outZero := 0;                                                       'DAC zero value
-var wUnits$ := "Volts";                                                   'Units
-var TraceToPlot[1];                                                     'initialize to 1 and then resize
+var TraceToPlot[1];                                                     'initialize to 1 and then resize according to the length
+'THE SCRIPT STARTS HERE BY CHECKING THE SPIKE VERSION AND INITIALIZING TOOLBAR
 'SET FILE PATH AND CREATE TOOLBAR**************************************************
 if App(-1)<701 then Message("This script needs at least Spike2 version 7.01"); halt endif;	'Checks for the latest version of Spike2
 FilePathSet("", 0, "Where do you want to save everything?");
@@ -129,7 +128,7 @@ end;
 Proc DisplayButtons()
     docase
     case mainVH% <= 0 then
-        ToolbarEnable(1, 1);
+        ToolbarEnable(1, 0);
         ToolbarEnable(2, 0);
         ToolbarEnable(3, 0);
         ToolbarEnable(5, 0);
@@ -141,10 +140,10 @@ Proc DisplayButtons()
         ToolbarEnable(11, 0);
         ToolbarEnable(13, 0);
         'ToolbarEnable(15, 0);
-        ToolbarEnable(18, 1);
-        ToolbarEnable(19, 1);
+        ToolbarEnable(18, 0);
+        ToolbarEnable(19, 0);
         ToolbarEnable(20, 0);
-        
+        ToolbarEnable(25, 0);
 
     case mainVH% >= 0 then
         ToolbarEnable(1, 0);
@@ -160,9 +159,11 @@ Proc DisplayButtons()
         ToolbarEnable(13, 1);
         'ToolbarEnable(15, 1);
         ToolbarEnable(18, 1);
+        ToolbarEnable(19, 1);
         ToolbarEnable(20, 1);
         ToolbarEnable(22, 0);
-        ToolbarEnable(19, 1);
+        ToolbarEnable(25, 1);
+
     endcase;
 end;
 
@@ -193,11 +194,11 @@ Func Idle%()
 
     if idlesave% = 1 and MaxTime() > (startramp + allXY%) then 'i need idle save other wise it will always enter here
       FrontView(mainVH%); 'set mainVH just to be sure to be in the time view'
-      CursorNew(MaxTime(),3);    ' cursor3 at max time
-      Cursor(3, MaxTime()); CursorVisible(3);
+      CursorNew(MaxTime(),2);    ' cursor2 at max time
+      Cursor(2, MaxTime()); CursorVisible(3);
       Yield(1);
       ExportChanList(1);    'initialise the channel list
-      ExportChanList(Cursor(0), Cursor(0)+ (allXY%+2), -1); 'save from the time snippet was clicked to the length of the XY set (X-range) + 2
+      ExportChanList(Cursor(0), Cursor(0)+ (allXY%+2), -1); 'save from the time snippet was clicked to the length of the XY set (X-range*n_rep) + 2
       WriteFileName%(); 'Func to save and also send the potential cmd to US exe app to save with same name
       idlesave% := 0;
       quickAnalysis%(which%); 'call the function to analyse between cursor 2 and 3 based on selection selected
@@ -324,6 +325,8 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
         'updates the xy-view immediately by already specifying the new variable value and not waiting for DlgShow
         case item% = 2 then xywidth := DlgValue(item%);
         case item% = 3 then allowedoffset := DlgValue(item%);
+        case item% = 12 then XYWindow%();    'update the xy-window everytime
+
         case item% = 4 then    'when different ramp selected then
             rampnumber% := DlgValue(item%);
 
@@ -342,12 +345,11 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
                         tempY$ := Mid$(line$,throaway%+1); 'y is the second part, so read the char after the comma to end
                         'Save values in x and y array to plot later
                         Import_rampX[i%]:= Val(line$); 'by default it reads the first col to the comma which is x
-                        Import_rampY[i%]:= Val(tempY$); 'convert y string to y number
+                        Import_rampY[i%]:= Val(tempY$); 'convert y string to a number
 
-                        i% := i% +1;
+                        i% := i% +1;   'move to the next line
                     wend;
-                    resize Import_rampY_scale[len(Import_rampY)];
-                    'PrintLog(len(Import_rampY));
+                    'resize Import_rampY_scale[len(Import_rampY)]; 'resize the Import
                     FileClose();                 ' we are done with the file
                 endif;
 
@@ -380,6 +382,7 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
                         genxy[x%] := r2[x%];    'needed to update the xy-view immediately
                 next;
             endif;
+    
     endcase;
 
     'update general xy appearance and +- feedback offset
@@ -417,41 +420,37 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
     endif;
  ' RAMP 3
     if rampnumber% = 3 then 'plot data from the TXT imported.
-
-        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
-        DlgEnable(0, 22, 23, 24, 25, 26, 27);
-
-        'sc% := DlgValue(29);
-        factor := DlgValue(28);
-
-        ArrConst(Import_rampY_scale,Import_rampY) ; 'create a scale Y array so the array multiplication doesn't affect the original one
-        ArrMul(Import_rampY_scale, factor); 'scale the y values in case you want to change the intensity, but remember you are changing the original file
-
-        rampmax := Import_rampY_scale[Max(Import_rampY_scale)];
-        rampmin := Import_rampY_scale[Min(Import_rampY_scale)];
-        PrintLog(rampmin);
-        range := rampmax * allowedoffset;    'feedback offset calculation
-    endif
-    ' RAMP 4 (MVC)
-    if rampnumber% = 4 or rampnumber% = 5 then
-        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23); 'Can't put more numbers in a single row
-        DlgEnable(0, 24, 25, 26, 27, 29, 30);
-        DlgEnable(1,28);
-        factor := DlgValue(28);
-        'Maybe open a dialog to put an ipotetical value '
-    endif
-    if rampnumber% = 5 then 'RAMP 5 (Hand draw)
-
         DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
         DlgEnable(0, 22, 23, 24, 25, 26, 27);
 
         'sc% := DlgValue(29);
         factor := DlgValue(28);
     
+        resize Import_rampY_scale [len(Import_rampY)]; 'Resize as Import_rampY_scale is used for both RAMP 3 and RAMP 5
+        ArrConst(Import_rampY_scale,Import_rampY) ; 'create a scale Y array so the array multiplication doesn't affect the original one
+        ArrMul(Import_rampY_scale, factor); 'scale the y values in case you want to change the intensity, but remember you are changing the original file
+        'Calculate ranges
+        rampmax := Import_rampY_scale[Max(Import_rampY_scale)];
+        rampmin := Import_rampY_scale[Min(Import_rampY_scale)];
+        range := rampmax * allowedoffset;    'feedback offset calculation
+    endif
+    ' RAMP 4 (MVC)
+    if rampnumber% = 4 then
+        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23); 'Can't put more numbers in a single row
+        DlgEnable(0, 24, 25, 26, 27, 29, 30);
+        DlgEnable(1,28);
+        factor := DlgValue(28);
+    endif
+    'RAMP 5 (Hand draw)
+    if rampnumber% = 5 then 
+        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
+        DlgEnable(0, 22, 23, 24, 25, 26, 27);
+
+        factor := DlgValue(28);    
         resize Import_rampY_scale [len(TraceToPlot)];
         ArrConst(Import_rampY_scale,TraceToPlot) ; 'create a scale Y array so the array multiplication doesn't affect the original one
         ArrMul(Import_rampY_scale, factor); 'scale the y values in case you want to change the intensity, but remember you are changing the original file
-
+        'Calculate ranges
         rampmax := Import_rampY_scale[Max(Import_rampY_scale)];
         rampmin := Import_rampY_scale[Min(Import_rampY_scale)];
         range := rampmax * allowedoffset;    'feedback offset calculation
@@ -512,7 +511,7 @@ Func XYWindow%()
         ChanColourSet(vertLine2%, 1, 0, 0.21, 0.38);    'RUB-blue
 
     endif;
-
+    'set the view
     FrontView(xyVH%);
 
     XYDelete(lrampCH%);    'make sure previous data is deleted
@@ -521,7 +520,7 @@ Func XYWindow%()
     XYDelete(uurampCH%);
     XYDelete(vertLine%);
     XYDelete(vertLine2%);
-
+    'VERTICAL LINE PLOT
     'just two hyphotetical values (I guess it's hard that someone reaches 1000 peak 2 peak)'
     'if they are set to 0 do not add them, because it's annoying for the XY view axis
     if (vLine[0] <> 0) then
@@ -548,16 +547,13 @@ Func XYWindow%()
     if rampnumber% = 2 then
         XYAddData(lrampCH%, r3x, genlcramp);
         XYAddData(urampCH%, r3x, genucramp);
-
     endif;
 
     if rampnumber% = 3 then
-
         for x% := 0 to len(Import_rampX)-1 do
             XYAddData(lrampCH%, Import_rampX[x%], Import_rampY_scale[x%]-range);
             XYAddData(urampCH%, Import_rampX[x%], Import_rampY_scale[x%]+range);
         next;
-
     endif;
 
     if rampnumber% = 5 then 'draw the boundiers of the drawn trace   
@@ -568,7 +564,7 @@ Func XYWindow%()
     endif
 
     'Correct YRange for theese ramps as they use rampmin and rampmax
-    YRange(-1, (rampmin-range)*1.15, (rampmax+range)*1.15);    'min/max of all ramp values + 20% for nicer view
+    YRange(-1, (rampmin-range)*1.15, (rampmax+range)*1.15);    'min/max of all ramp values + 15% for nicer view
 
     if rampnumber% = 4 then 'SET THE HORIZONTAL LINES LIMITS for MVC
         'just two local vars to keep max and min'
@@ -668,8 +664,8 @@ Func Snippet%()
     'such that you can always refer to your event timestamp or TTL channels as common signal
     Yield(1);
 
-    CursorNew(MaxTime(),2);    'set the cursor2 already in the main view
-    Cursor(2,MaxTime());
+    CursorNew(MaxTime(),1);    'set the cursor1 already in the main view
+    Cursor(1,MaxTime());
     GetXYData%();   'sets startramp variable to current time so that biofeedback can be given
     SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
     if savetrue% = 1 then idlesave% := 1; endif;    'idle function checks for state of idlesave% variable
@@ -684,7 +680,7 @@ Func SetUp_VarSeq%()
 if samplekey$ = "i" then SampleSeqVar(11,(TP_Isomed[0]*100000) -1); 'If only ISOMED fix to 10us as it won´t be a loop but just a delay, -1 for the tick
  else
   SampleSeqVar(10,xywidth*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
-  SampleSeqVar(11,(TP_Isomed[0]*100)-2); '-2 otherwise there is a shift of ~120ms due to a cycle of the US
+  SampleSeqVar(11,(TP_Isomed[0]*100)-2); '-2 otherwise there is a shift of ~120ms due to a duty cycle for triggering the US
   SampleSeqVar(12,(TP_Isomed[1]*100)-1);
   SampleSeqVar(13,(TP_DAC3*100)-2);
   SampleSeqVar(14,((xywidth-TP_Isomed[0])*100));
@@ -706,7 +702,7 @@ Func RepXY%()
     DlgReal(5, "TimePoint ISOMED 1",1, xywidth);
     DlgReal(6, "TimePoint ISOMED 2",1, xywidth);
     DlgReal(7, "TimePoint DAC3 Release",1, xywidth);
-    DlgLabel(8, "CAUTION! the Snippet is working based on the X-Range value and not the last TimePoint value!");
+    DlgLabel(8, "CAUTION! The Snippet is working based on the XY-width value and not the last TimePoint value!");
     DlgShow(throaway%, throaway%, throaway%, repXYcycle%,TP_Isomed[0],TP_Isomed[1],TP_DAC3,throaway%);
     'SORT for the idiots that wanna try finding a bug
     ArrSort(TP_Isomed);
@@ -834,23 +830,25 @@ end
 'QUICK ANALYSIS BETWEEN CURSORs 2 and 3 from snippet *************************************************************************
 Func quickAnalysis%(which%)
 
-  FrontView(mainVH%); 'set mainVH just to be sure to be in the time view every time'
+  FrontView(mainVH%); 'set mainVH just to be sure to be in the time view'
   'if MVC is true then return and store them in max and min MVC
   if checkMVC% > 0 then
     'Check max and min MVC and store the peak values. Useful for checking fatigue if subject can still reach 95% of the best or if he faked it'
-    if(maxMVC < ChanMeasure(fdbkdata%,8,Cursor(2),Cursor(3))) then
-      maxMVC := ChanMeasure(fdbkdata%,8,Cursor(2),Cursor(3));
+    if(maxMVC < ChanMeasure(fdbkdata%,8,Cursor(1),Cursor(2))) then
+      maxMVC := ChanMeasure(fdbkdata%,8,Cursor(1),Cursor(2));
     endif
-    if(minMVC > ChanMeasure(fdbkdata%,9,Cursor(2),Cursor(3))) then
-      minMVC := ChanMeasure(fdbkdata%,9,Cursor(2),Cursor(3));
+    if(minMVC > ChanMeasure(fdbkdata%,9,Cursor(1),Cursor(2))) then
+      minMVC := ChanMeasure(fdbkdata%,9,Cursor(1),Cursor(2));
     endif
   endif
 
-  'Always set cursor 2 and 3 active to follow cursor 0 so easy to navigate and perform analysis each time you snippet'
-  'Set cursor 2 and 3 in active mode
-  'CursorActive(2,16, 0, "Cursor(0)+PosCursor[1]");   'Expression
-  'CursorActive(3,16, 0, "Cursor(0)+PosCursor[2]");   'Expression
-
+    'Always set cursor 1 and 2 active to follow cursor 0 so easy to navigate and perform analysis each time you snippet'
+    'if CursorExists(1) = 0 and CursorExists(2) = 0 then
+    '    'Set cursor 1 and 2 in active mode
+    '    CursorActive(1,16, 0, "Cursor(0)+1");   'Expression
+    '    var tmp$ := "Cursor(1) + " + Str$(xywidth);    'I need to convert it
+    '    CursorActive(2,16, 0, tmp$);   'Expression
+    '  endif
   'Create two horizontal cursor for max and min'
   'HCursorDelete(-1); 'Delete all cursors otherwise will add tons of them
   if HCursorExists(1) = 0 and HCursorExists(2) = 0 then
@@ -904,8 +902,8 @@ DlgReal(1,"Time Points Resolution / Frequency (Hz)",1,100000);
 DlgReal(2,"Playwave duration (s)",0.01,xywidth);
 DlgReal(3, "Channel Offset", 0, 1000);
 DlgReal(4, "Channel Full Scale",0.0001,1000000);
-DlgString(5, "Units",10);
-throaway% := DlgShow(pWaveRate,xywidth,outZero,outMax,wUnits$);    	'Return variables
+
+throaway% := DlgShow(pWaveRate,xywidth,outZero,outMax);    	'Return variables
 if throaway% > 0 then
     View(mainVH%); 
     ToolbarSet(25, "Draw", AddPWave%);
@@ -920,7 +918,7 @@ if throaway% > 0 then
     drawView% :=SetResult(1,pWavePts%,pWaveInt,0,"PlayWave","s");    		'Set up result view with appropriate bin size etc
     DrawMode(1,2);                                                      'Draw in waveform mode
     YRange(1,outZero - (outMax-outZero),outMax);
-	ChanUnits$(1,wUnits$);	
+	ChanUnits$(1,"Channel Unit");	
     Window(0,0,100,100);
     FrontView(drawView%);
 	ToolbarMouse(drawView%,0,4,5,Down%,Up%,Move%);                   		'Set up mouse capture requiring shift and left mouse button to activate functions
@@ -929,7 +927,7 @@ if throaway% > 0 then
 endif;
 return 1;
 end;
-
+'SAVE HAND TRACE TO PLOT IN XY *************************************************************************
 Func AddPWave%();
     'get data from the sketch and then close the view
     resize TraceToPlot [Len(View(drawView%).[])]; 'resize The array to plot
@@ -943,6 +941,8 @@ Func AddPWave%();
  
     return 1;
 end;
+
+'GET MOUSE POSITION(s)*************************************************************************
 Func Down%(vh%,chan%,x,y,flags%)                                 'Function for left mouse button press
 if XtoBin(x) >= 0 and XToBin(x) <= Len([])-1 then                	'If within range
     [XToBin(x)] := y;                                            		'Set bin at mouse x position to mouse y position
@@ -983,7 +983,6 @@ if bin% >= 0 and bin% <= Len([])-1 then                         		'If within are
     oldX% := bin%;                                              		'Update variables with mouse position
     oldY := y;
 endif;
-return 1;
+    return 1;
 end;
-
 
