@@ -14,7 +14,7 @@ I am lazy to describe eveything but many other functions are included, but you c
 Example: here the frequency set in the Config File is 2000Hz so when exporting you will have all <b>RAW</b> channels with (X width + 2) *2000 points
 
 
-Thanks to my first German Office Mate **[Tobi (the) Weingarten](https://github.com/vinjardin)** 🍷 who creates the first version!!!
+Thanks to my first German Office Mate **[Tobi (the) Weingarten](https://github.com/vinjardin)** 🍷 who created the first version!!!
 
 Example real time ramp using GAME MODE
 
