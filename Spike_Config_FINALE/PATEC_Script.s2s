@@ -919,7 +919,8 @@ if throaway% > 0 then
     DrawMode(1,2);                                                      'Draw in waveform mode
     YRange(1,outZero - (outMax-outZero),outMax);
 	ChanUnits$(1,"Channel Unit");	
-    Window(0,0,100,100);
+    Window(0,0,100,100);    View(drawView%);
+
     FrontView(drawView%);
 	ToolbarMouse(drawView%,0,4,5,Down%,Up%,Move%);                   		'Set up mouse capture requiring shift and left mouse button to activate functions
     ToolbarText("Keep clicking Shift with the left click for drawing. Click 'Draw' to Plot the waveform in the XY view");
@@ -943,7 +944,8 @@ Func AddPWave%();
 end;
 
 'GET MOUSE POSITION(s)*************************************************************************
-Func Down%(vh%,chan%,x,y,flags%)                                 'Function for left mouse button press
+Func Down%(vh%,chan%,x,y,flags%) 
+View(drawView%); 'Function for left mouse button press
 if XtoBin(x) >= 0 and XToBin(x) <= Len([])-1 then                	'If within range
     [XToBin(x)] := y;                                            		'Set bin at mouse x position to mouse y position
     oldX% := XtoBin(x);                                          	'Update variables with last mouse position
@@ -960,7 +962,7 @@ end;
 Func Move%(vh%,chan%,x,y,flags%)                                		'Function for mouse movement
 var bin%;                                                       		'Current bin position of mouse
 var pts%;                                                       		'Number of points moved since last time function called
-
+View(drawView%);
 bin% := XToBin(x);                                              		'Get bin position
 if bin% >= 0 and bin% <= Len([])-1 then                         		'If within area
     if bin% <> oldX% then                                       		'Has it moved?
