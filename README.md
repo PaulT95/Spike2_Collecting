@@ -16,7 +16,7 @@ Example: here the frequency set in the Config File is 2000Hz so when exporting y
 
 Thanks to my first German Office Mate **[Tobi (the) Weingarten](https://github.com/vinjardin)** 🍷 who created the first version!!!
 
-Example real time ramp using GAME MODE
+## Example real-time plotting and ramp using GAME MODE
 
 
   ![GIF_Ramp](https://user-images.githubusercontent.com/73119114/177746110-d5c6240d-1af0-44d8-83c9-f5e2dd74e2d0.gif)
