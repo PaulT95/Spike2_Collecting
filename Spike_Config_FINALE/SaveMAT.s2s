@@ -1,5 +1,7 @@
 'Script ONLY for saving single trials in MAT from a spike2 file
-'BE CAREFUL- check line 38 (Cursor(0)+16). Change 16s with the window amplitude you need!
+'BE CAREFUL- check line 38 (Cursor(0)+16). Change 16s with the window amplitude you need
+'or add an active cursor(1) that is an a specific position relative to cursor(0)
+'Author: Paolo Tecchio'
 'GLOBAL VARIABLE DECLARATIONS*****************************************************
 
 var throaway%;
@@ -11,9 +13,6 @@ Proc DoToolbar()
     ToolbarClear();
     'ToolbarSet(0, "", Idle%);
     ToolbarSet(2, "Save MAT", SaveMat%);
-
-   
-
     ToolbarSet(-1, "Quit");
 
     DisplayButtons();
@@ -21,10 +20,8 @@ Proc DoToolbar()
 end;
 
 Proc DisplayButtons()
-
         ToolbarEnable(1, 1);
         ToolbarEnable(2, 1);
-
 end;
 
 
@@ -56,8 +53,6 @@ Func SaveMat%()
         else
             'if save goes well it returns zero otherwise it returns other codes < 0
             shitCheck% := FileSaveAs(ItemText$ + ".mat", 100, 0, "", 0,expFlags$); 'Export (string args)
-
-            
 
              if shitCheck% = 0  then break; endif; 'if you save/overwrite just break and return'
 

@@ -101,7 +101,6 @@ Proc DoToolbar()
     ToolbarSet(0, "", Idle%);
     ToolbarSet(25,"Draw Trace",MakeWave%);
     ToolbarSet(22, "Start Sampling", New%);
-
     ToolbarSet(20, "Change View", ChangeView%);
     ToolbarSet(19, "Rep XY/Seq Config", RepXY%);
     ToolbarSet(18, "XY-Ramp", XYRampSettings%);
@@ -393,7 +392,8 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
         DlgEnable(0, 22, 23, 24, 25, 26, 27);
         rampmax := Max(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);    'for ramp range offset and for x and y range, only every second value off array as these are the y values
         rampmin := Min(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);
-        range := rampmax * allowedoffset;    'feedback offset calculation
+        range := abs(rampmax * allowedoffset);    'feedback offset calculation
+        if (abs(rampmax) < abs(rampmin)) then range := rampmin * allowedoffset; endif 'correct offest in case of neg values
     endif;
 
     'RAMP 2
@@ -413,7 +413,8 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
 
         rampmax := Max(temp); rampmax := temp[rampmax];
         rampmin := Min(temp); rampmin := temp[rampmin];
-        range := rampmax * allowedoffset;
+        range := abs(rampmax * allowedoffset);
+        if (abs(rampmax) < abs(rampmin)) then range := abs(rampmin * allowedoffset); endif 'correct offest in case of neg values
 
         ArrConst(genlcramp, temp); ArrConst(genucramp, temp);
         ArrAdd(genlcramp, range * -1);
@@ -434,7 +435,9 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
         'Calculate ranges
         rampmax := Import_rampY_scale[Max(Import_rampY_scale)];
         rampmin := Import_rampY_scale[Min(Import_rampY_scale)];
-        range := rampmax * allowedoffset;    'feedback offset calculation
+        range := abs(rampmax * allowedoffset);
+        if (abs(rampmax) < abs(rampmin)) then range := abs(rampmin * allowedoffset); endif 'correct offest in case of neg values
+
     endif
     ' RAMP 4 (MVC)
     if rampnumber% = 4 then
@@ -455,7 +458,9 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
         'Calculate ranges
         rampmax := Import_rampY_scale[Max(Import_rampY_scale)];
         rampmin := Import_rampY_scale[Min(Import_rampY_scale)];
-        range := rampmax * allowedoffset;    'feedback offset calculation
+         range := abs(rampmax * allowedoffset); 'offset of calculation
+        if (abs(rampmax) < abs(rampmin)) then range := abs(rampmin * allowedoffset); endif 'correct offest in case of neg values
+
     endif
 
     XYWindow%();    'update the xy-window everytime
@@ -566,7 +571,8 @@ Func XYWindow%()
     endif
 
     'Correct YRange for theese ramps as they use rampmin and rampmax
-    YRange(-1, (rampmin-range)*1.15, (rampmax+range)*1.15);    'min/max of all ramp values + 15% for nicer view
+    'YRange(-1, (rampmin-range)*1.2, (rampmax+range)*1.2);    'min/max of all ramp values + 20% for nicer view
+
 
     if rampnumber% = 4 then 'SET THE HORIZONTAL LINES LIMITS for MVC
         'just two local vars to keep max and min'
@@ -589,11 +595,13 @@ Func XYWindow%()
         for x% := 0 to 15 do
             XYAddData(urampCH%, x%, minMVCramp + range);
         next;
-        YRange(-1, (minMVCramp)*1.2, maxMVCramp*1.2); 'min/max of all ramp values + 20 for nicer view
+        'YRange(-1, (minMVCramp)*1.2, maxMVCramp*1.2); 'min/max of all ramp values + 20 for nicer view
 
     endif
 
-   XRange(0,xywidth); 'in case you are using other ramps
+   'Optimise the y axis automatically, it saves lines of code and calculation. Fix the x axis to the xywidth to remind that snippet saving according to that
+   Optimise(-2); 'Visible channels
+   XRange(0,xywidth); 'Fix x axis
 
    return 1;
 end;
