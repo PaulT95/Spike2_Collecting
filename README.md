@@ -23,7 +23,7 @@ Thanks to my first German Office Mate **[Tobi (the) Weingarten](https://github.c
 ## How to mention
 You can credit this work by including the following text:
 
-"The library used is publicly available on GitHub."
+"The library used is publicly available on [GitHub](https://github.com/PaulT95/Spike2_Collecting) ."
 
 Thank you for choosing this library. Happy coding! 😄
 
