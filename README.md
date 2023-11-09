@@ -1,6 +1,6 @@
 # PATEC script: Spike2 Collecting Data
 
-If you find this library helpful in your project, please consider mentioning us in your credits or sharing how you're using it. We'd love to hear your success stories! 😊
+If you find this library helpful in your project, please consider mentioning us in your credits or sharing how you're using it.
 
 ## How it works
 PATEC script is a Spike2 script for collecting and sampling data with a user-friendly interface.
