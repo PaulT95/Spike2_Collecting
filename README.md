@@ -27,7 +27,7 @@ You can credit this work by including the following text:
 
 Thank you for choosing this library. Happy coding! 😄
 
-## Example real-time plotting and ramp using GAME MODE
+## Example real-time torque feedback on a drawn ramp using GAME MODE
 
 
   ![GIF_Ramp](https://user-images.githubusercontent.com/73119114/177746110-d5c6240d-1af0-44d8-83c9-f5e2dd74e2d0.gif)
