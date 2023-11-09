@@ -3,7 +3,6 @@
 PATEC script is a Spike2 script for collecting and sampling data with a user-friendly interface implemented in Spike2.
 
 
-
 ## How it works
 
 You can change the sequencer to create a specific TTL or DutyCycle signal and trigger the devices, it depends on what you need. However, this script can update the sequencer in real time (with a fixed setup), depending on your goals.
