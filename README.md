@@ -17,8 +17,13 @@ I am lazy to describe everything but many other functions are included, but you 
 
 Example: Here the frequency set in the Config File is 2000Hz so when exporting you will have all <b>RAW</b> channels with (X width + 2) *2000 points
 
+
+## Auto saving of Telemed ultrasound video in tvd format
+To use the exe console script I created please refers to the following library [Save TVD](https://github.com/PaulT95/Save_TVD_exe) or if you want to implement any command to control EchoWave via Spike2 buttons you can use [EchoWave CMD](https://github.com/PaulT95/EchoWave_cmd). 
+
+
 ## Acknowledgments 
-Thanks to my first German Office Mate **[Tobi (the) Weingarten](https://github.com/vinjardin)** 🍷 who created the first version!!!
+Thanks to my first German Office Mate **[Tobi (the) Weingarten](https://github.com/vinjardin)** 🍷 who helped me!!!
 
 ## How to mention
 You can credit this work by including the following text:
