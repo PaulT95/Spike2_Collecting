@@ -56,7 +56,7 @@ var winwidth% := 70;
 
 'Equipment Check variables
 var uscheck%, DAC1_TTL%, tappercheck%, motioncapcheck%, isomedcheck%, shorttap%, savetrue%, DAC3%, isomedcheck2%;
-var samplekey$; 'select samplekey based on selected variables from above for the sequencer
+var samplekey$ := "n"; 'select samplekey based on selected variables from above for the sequencer
 var idlesave% := 0;
 
 'Analysis options '
@@ -647,7 +647,8 @@ Func SetEquipment%()
         case uscheck% = 1 and DAC1_TTL% = 1 and DAC3%  = 0 and isomedcheck% = 1 and isomedcheck2% = 0 then samplekey$ := "J";
         case uscheck% = 1 and DAC1_TTL% = 0 and DAC3%  = 0 and isomedcheck% = 1 and isomedcheck2% = 1  then samplekey$ := "S";
         case uscheck% = 1 and DAC1_TTL% = 1 and DAC3%  = 0 and isomedcheck% = 1 and isomedcheck2% = 1  then samplekey$ := "k";
-
+        case uscheck% = 0 and DAC1_TTL% = 0 and DAC3%  = 0 and isomedcheck% = 0 and isomedcheck2% = 0  and savetrue% = 1 then samplekey$ := "P";  'only save snippet
+        
         else samplekey$ := "n"; Message("No sequener instruction found");    'just instructs the sequencer to HOLD
     endcase;
     return 1;
@@ -656,32 +657,37 @@ end;
 'FUNCTION TO TRIGGER EQUIPMENT, START BIOFEEDBACK AND SAVE SHORT SNIPPETS**********
 Func Snippet%()
 
-    allXY% := xywidth * repXYcycle%; 'calculate overall XY duration'
-    'prepare a cursor from which on the snippet can be saved
-    View(mainVH%);
-    n% := 1; 'reset number of contractions/XY performed'
+    if (samplekey$ = "n") then
+        Message("No equipment option selected");
+        
+    else
+        allXY% := xywidth * repXYcycle%; 'calculate overall XY duration'
+        'prepare a cursor from which on the snippet can be saved
+        View(mainVH%);
+        n% := 1; 'reset number of contractions/XY performed'
 
-    'SampleSeqVar(10,allXY%*100); 'Set to the sequencer V10 the duration of the duty cycle depending on XY view'
-    Cursor(0, MaxTime());
-    CursorVisible(0,1);
-    CursorActive(0,14, 31, 0, "", "", 1);   'Data points --> keyboard. Make cursor 0 active to search keyboard
-    'easy to navigate everytime you snippet'
+        'SampleSeqVar(10,allXY%*100); 'Set to the sequencer V10 the duration of the duty cycle depending on XY view'
+        Cursor(0, MaxTime());
+        CursorVisible(0,1);
+        CursorActive(0,14, 31, 0, "", "", 1);   'Data points --> keyboard. Make cursor 0 active to search keyboard
+        'easy to navigate everytime you snippet'
 
-    'Pass values to vars to the sequencer'
-    SetUp_VarSeq%(); 'Firt snippet Send Vars to sequencer'
+        'Pass values to vars to the sequencer'
+        SetUp_VarSeq%(); 'Firt snippet Send Vars to sequencer'
 
-    'you can't rely on the timing of the cursor positions for post-analysis, therefore save an extra second beforehand,
-    'such that you can always refer to your event timestamp or TTL channels as common signal
-    Yield(1);
+        'you can't rely on the timing of the cursor positions for post-analysis, therefore save an extra second beforehand,
+        'such that you can always refer to your event timestamp or TTL channels as common signal
+        Yield(1);
 
-    CursorNew(MaxTime(),1);    'set the cursor1 already in the main view
-    Cursor(1,MaxTime());
-    GetXYData%();   'sets startramp variable to current time so that biofeedback can be given
-    SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
-    if savetrue% = 1 then idlesave% := 1; endif;    'idle function checks for state of idlesave% variable
-    if storecramp% = 1 then idlecramp% :=1; endif;     'idle function checks for state of idlecramp% variable
-
+        CursorNew(MaxTime(),1);    'set the cursor1 already in the main view
+        Cursor(1,MaxTime());
+        GetXYData%();   'sets startramp variable to current time so that biofeedback can be given
+        SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
+        if savetrue% = 1 then idlesave% := 1; endif;    'idle function checks for state of idlesave% variable
+        if storecramp% = 1 then idlecramp% :=1; endif;     'idle function checks for state of idlecramp% variable
+    endif
     return 1;
+    
 end;
 
 'FUNCTION TO CHECK LAST XY view AND SETUP THE SEQUENCER BEFORE SNIPPET**********
