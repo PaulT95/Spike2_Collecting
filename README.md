@@ -1,9 +1,10 @@
 # PATEC script: Spike2 Collecting Data
 
-If you find this library helpful in your project, please consider mentioning us in your credits or sharing how you're using it.
+PATEC script is a Spike2 script for collecting and sampling data with a user-friendly interface implemented in Spike2.
+
+
 
 ## How it works
-PATEC script is a Spike2 script for collecting and sampling data with a user-friendly interface.
 
 You can change the sequencer to create a specific TTL or DutyCycle signal and trigger the devices, it depends on what you need. However, this script can update the sequencer in real time (with a fixed setup), depending on your goals.
 You can create or import specific ramps/traces (txt files, with a matrix of 2 col and n points) to follow via live feedback (in this case you can choose the channel like Torque, Force, whatever), first column X (so time), second column array of ramp/trace to plot
