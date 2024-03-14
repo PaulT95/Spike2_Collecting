@@ -43,17 +43,17 @@ INFUS:  'U  DAC    2,4             ;INFINITE US
 
 ;MOVE ISOMED TWICE FOR FAST Stretch-shortening/ Shortening Stretch cycle.
 OISOMED: 'S DAC    1,4             ;TTL from DAC1
-            MOV    V1,V11
+            MOV    V1,V11,-4       ; -4 because of this and the upcoming instruction till delay are 4 ticks
             MULI   V1,1000         ;1000 because I am passing the values for the other cycles multiplied by 100
             DELAY  V11             ;move only Isomed after time defined in the script
             DIGOUT [....ii..]      ;First rotation
-            MOV    V1,V15
+            MOV    V1,V15,-3       ;-3 because of current instruction + the next ones is 3 ticks
             MULI   V1,1000
             DELAY  V1
             DIGOUT [....ii..]      ;Second rotation
-            MOV    V1,V16
+            MOV    V1,V16,-3       ;-3 because of current instruction + the next ones is 3 ticks  
             MULI   V1,1000
-            DELAY  V16             ;-2 steps caluclation of the ticks operations
+            DELAY  V16             ;3 steps caluclation of the ticks operations
             DAC    1,0
             HALT
 
@@ -95,11 +95,11 @@ ULTRAMU2:   DAC    2,4
             HALT
 
 
-;US (DAC2) 100Hz and TTL MYON (DAC1) FOR XY WIDTH AND MOVE ISOMED TWICE
+;US (DAC2) 100Hz and TTL (DAC1) FOR XY WIDTH AND MOVE ISOMED TWICE
 MYUSISOS: 'k DAC   1,4             ;TTL from DAC1 and THEN duty cycle 100Hz DAC2 for US
             MOV    V1,V11          ;copy the variable V11 in V1, so I do not need to pass everytime in the Idle
-            MOV    V2,V15          ;copy the variable V14 in V2, so I do not need to pass everytime in the Idle
-            MOV    V3,V16          ;copy the variable V11 in V1, so I do not need to pass everytime in the Idle
+            MOV    V2,V15          ;copy the variable V15 in V2, so I do not need to pass everytime in the Idle
+            MOV    V3,V16          ;copy the variable V16 in V3, so I do not need to pass everytime in the Idle
 ULTRAMUS:   DAC    2,4
             DELAY  s(1/200)-4
             DAC    2,0
@@ -109,7 +109,7 @@ ULTRAMUS:   DAC    2,4
             DAC    2,4
             DELAY  s(1/200)-4
             DAC    2,0
-            DELAY  s(1/200)-1
+            DELAY  s(1/200)-2
             DIGOUT [....ii..]
 
 ULTRAMD:    DAC    2,4
@@ -121,7 +121,7 @@ ULTRAMD:    DAC    2,4
             DAC    2,4
             DELAY  s(1/200)-4
             DAC    2,0
-            DELAY  s(1/200)-1
+            DELAY  s(1/200)-2
             DIGOUT [....ii..]
 
 ULTRAMH:    DAC    2,4
@@ -132,7 +132,7 @@ ULTRAMH:    DAC    2,4
             DAC    1,0             ;report dac 1 to zero
             HALT
 
-;STIMULATION PART: WE USE THE DIGITAL BIT 0 IN THE FRONTAL PANEL
+;STIMULATION PART: WE USE THE DIGITAL BIT 0(ZERO) IN THE FRONT PANEL OF THE 1401
 
 ;STIM AND NO rotation
 STIMFIX: 'M DAC    1,4             ;TTL from DAC1 and then stimulation train
@@ -141,7 +141,7 @@ STIMFIX: 'M DAC    1,4             ;TTL from DAC1 and then stimulation train
             SUB    V2,V18,-1       ;delay till end XY
 
             DELAY  V17             ;wait till the beginning of stim
-FIRSTTR:    DIGOUT [0000..01]      ;send signal to front panel digital output
+FIRSTTR:    DIGOUT [0000..01]      ;send signal to front panel digital output 0
             DIGOUT [0000..00]
             DELAY  V19             ;delay based on delta t of the frequency
             DBNZ   V1,FIRSTTR      ;REP STIMULATIONS according to n stimulation
