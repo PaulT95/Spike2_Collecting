@@ -204,7 +204,7 @@ Func Idle%()
       endif
       CursorNew(MaxTime(),2);    ' cursor2 at max time
       Cursor(2, MaxTime()); CursorVisible(3);
-    
+
       Yield(1);
       ExportChanList(1);    'initialise the channel list
       ExportChanList(Cursor(0), Cursor(0)+ (allXY%+2), -1); 'save from the time snippet was clicked to the length of the XY set (X-range*n_rep) + 2
@@ -717,12 +717,13 @@ end;
 'FUNCTION TO CHECK LAST XY view AND SETUP THE SEQUENCER BEFORE SNIPPET**********
 Func SetUp_VarSeq%()
 
-var TickClk := 100000;'SampleSeqClock(1);
+var TickClk := 1 / (SampleSeqClock(1) / 1000); 'get running seq clock '100000;'SampleSeqClock(1); /1000 because in ms
+
 'Adjust stuff '
 docase
 case samplekey$ = "M" or samplekey$ = "N" then 'NOT USING SAMPLE KEY because if I change the parameters in seq settings it does not change sample to STIM1 again
-    
-   Message(TickClk);
+
+  
  'Isomed stuff '
   SampleSeqVar(11,(TP_Isomed[0]*TickClk) ); 'If only ISOMED fix to 10us as it won´t be a loop but just a delay, -1 for the tick
   SampleSeqVar(99, xywidth*TickClk);

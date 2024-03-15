@@ -202,12 +202,12 @@ LOOPost:    DIGOUT [0000..01]      ;send signal
 ;;;;;;;;;;; Rotation in the middle
 
 MID:        MOV    V2,V11,-1
-            SUB    V2,V17,-1       ;delta time between beginning of stimulation and start of rotation
+            SUB    V2,V17       ;delta time between beginning of stimulation and start of rotation
             DIV    V2,V19          ;calculate n stimulation to send
 
             MOV    V3,V18
-            SUB    V3,V11       ;delta time between rotation to end of stimulation
-            DIV    V3,V19          ;n stim to end
+            SUB    V3,V11              ;delta time between rotation to end of stimulation
+            DIV    V3,V19          ;n stim to end, +1 because one instruction is lost due to digout 
 
             DELAY  V17             ;5+1 instructions before
 
@@ -222,7 +222,10 @@ LOOPosR:    DIGOUT [0000..01]      ;send signal
             DIGOUT [0000..00]
             DELAY  V19             ;delay based on delta t of the frequency
             DBNZ   V3,LOOPosR      ;REP STIMULATIONS according to n stimulation
-
+            
+            ;DIGOUT [0000..01]      ;send last stim signal
+            ;DIGOUT [0000..00]
+            
             MOV    V1,V99,-1
             SUB    V1,V18,-1       ;delay till end XY
             JUMP   END
@@ -233,3 +236,18 @@ END:        DELAY  V1              ;-3 because of MOV,MULI,JUMP
             HALT
 
 ;Do I have to always send the var via script or it's because I use DBNZ directly on the variable which goes to 0?
+;STIM and ONE ROTATION
+TESTPT: 'A DAC   1,4
+           ;DIGOUT [....ii..] ;trigger rot 
+VAR     V1,level=VDAC16(59) ;level to cross
+         VAR     V2,data          ;to hold the last data
+         VAR     V3,low=VDAC16(61)    ;some sort of hysteresis level
+           DIGOUT [....ii..] ;trigger rot 
+BELOW:   CHAN    data,2           ;read latest data   >wait below
+         BGT     data,low,below   ;wait for below     >wait below
+ABOVE:   CHAN    data,2           ;read latest data   >wait above
+         BLE     data,level,above ;wait for above     >wait above
+         DIGOUT  [.......1]       ;pulse output...
+         DIGOUT  [.......0];...wait for below
+        DAC 1,0
+        HALT                     ; next task...
