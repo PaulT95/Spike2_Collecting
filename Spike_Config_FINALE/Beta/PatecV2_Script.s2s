@@ -133,7 +133,7 @@ end;
 Proc DisplayButtons()
     docase
     case mainVH% <= 0 then
-        ToolbarEnable(1, 1);
+        ToolbarEnable(1, 0);
         ToolbarEnable(2, 0);
         ToolbarEnable(3, 0);
         ToolbarEnable(5, 0);
@@ -656,7 +656,7 @@ Func SetEquipment%()
 'E.g., I need 2 rotations but no Ultrasound, just tick US but it won't be opened in Echowave or whatsoever
     docase
         case uscheck% = 0 and DAC1_TTL% = 0 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 0  then samplekey$ := "P";  'only save snippet
-        case uscheck% = 0 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 then samplekey$ := "S"; 'This is for special case that fast events occur (> 100Hz, limit of US sync)
+        case uscheck% = 0 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 and savetrue% = 1 and StimP% = 0  then samplekey$ := "S"; 'This is for special case that fast events occur (> 100Hz, limit of US sync)
         'With US stuff for "slower things"
         case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 0 then  samplekey$ := "u";    'ultrasound only as XY WIDTH * rep but no rotations
         case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 0 then samplekey$ := "J"; 'US @100Hz, TTL DAC1 and a single rotation'
@@ -723,7 +723,7 @@ var TickClk := 1 / (SampleSeqClock(1) / 1000); 'get running seq clock '100000;'S
 docase
 case samplekey$ = "M" or samplekey$ = "N" then 'NOT USING SAMPLE KEY because if I change the parameters in seq settings it does not change sample to STIM1 again
 
-  
+
  'Isomed stuff '
   SampleSeqVar(11,(TP_Isomed[0]*TickClk) ); 'If only ISOMED fix to 10us as it won´t be a loop but just a delay, -1 for the tick
   SampleSeqVar(99, xywidth*TickClk);
@@ -734,7 +734,10 @@ case samplekey$ = "M" or samplekey$ = "N" then 'NOT USING SAMPLE KEY because if 
   SampleSeqVar(20,  n_Stim%);' Stim_Set[3]); 'num of stimulation to send = repeating loop
 
 case samplekey$ = "STIM2" then Message("No sequencer created yet, baustelle!")
-
+case samplekey$ = "S" then
+    SampleSeqVar(11,(TP_Isomed[0]* TickClk));
+    SampleSeqVar(15,((TP_Isomed[1]-TP_Isomed[0])*TickClk));
+    SampleSeqVar(16,((xywidth-TP_Isomed[1])*TickClk));
 else 'default' with US sync frame line in @ 100Hz
   SampleSeqVar(10,xywidth*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
   SampleSeqVar(11,(TP_Isomed[0]*100)-2); '-2 otherwise there is a shift of ~120ms due to a duty cycle for triggering the US
@@ -742,7 +745,7 @@ else 'default' with US sync frame line in @ 100Hz
   'SampleSeqVar(13,(TP_DAC3*100)-2);
   SampleSeqVar(14,((xywidth-TP_Isomed[0])*100));
   SampleSeqVar(15,((TP_Isomed[1]-TP_Isomed[0])*100)-1);
-  SampleSeqVar(16,((xywidth-TP_Isomed[1])*100)); 'There will be always an "error" of <~3-12ms when Repeating because of the Clock of CPU
+  SampleSeqVar(16,((xywidth-TP_Isomed[1])*100));
 
   'Stimulation variables with no rotation
   SampleSeqVar(17, Stim_Set[0]*TickClk);

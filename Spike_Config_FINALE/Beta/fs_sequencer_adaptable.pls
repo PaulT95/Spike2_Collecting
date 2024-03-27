@@ -43,16 +43,16 @@ INFUS:  'U  DAC    2,4             ;INFINITE US
 
 ;MOVE ISOMED TWICE FOR FAST Stretch-shortening/ Shortening Stretch cycle.
 OISOMED: 'S DAC    1,4             ;TTL from DAC1
-            MOV    V1,V11,-4       ; -4 because of this and the upcoming instruction till delay are 4 ticks
-            MULI   V1,1000         ;1000 because I am passing the values for the other cycles multiplied by 100
+            MOV    V1,V11,-3       ; -2 because of this and the upcoming instruction till delay are 4 ticks
+            ;MULI   V1,1000         ;1000 because I am passing the values for the other cycles multiplied by 100
             DELAY  V11             ;move only Isomed after time defined in the script
             DIGOUT [....ii..]      ;First rotation
-            MOV    V1,V15,-3       ;-3 because of current instruction + the next ones is 3 ticks
-            MULI   V1,1000
+            MOV    V1,V15,-2       ;-3 because of current instruction + the next ones is 3 ticks
+            ;MULI   V1,1000
             DELAY  V1
             DIGOUT [....ii..]      ;Second rotation
-            MOV    V1,V16,-3       ;-3 because of current instruction + the next ones is 3 ticks  
-            MULI   V1,1000
+            MOV    V1,V16,-2       ;-3 because of current instruction + the next ones is 3 ticks  
+            ;MULI   V1,1000
             DELAY  V16             ;3 steps caluclation of the ticks operations
             DAC    1,0
             HALT
