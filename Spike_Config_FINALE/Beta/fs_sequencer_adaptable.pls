@@ -43,16 +43,16 @@ INFUS:  'U  DAC    2,4             ;INFINITE US
 
 ;MOVE ISOMED TWICE FOR FAST Stretch-shortening/ Shortening Stretch cycle.
 OISOMED: 'S DAC    1,4             ;TTL from DAC1
-            MOV    V1,V11,-3       ; -2 because of this and the upcoming instruction till delay are 4 ticks
-            ;MULI   V1,1000         ;1000 because I am passing the values for the other cycles multiplied by 100
-            DELAY  V11             ;move only Isomed after time defined in the script
+            MOV    V1,V11,-2       ; -2 because of this and the upcoming instruction till delay are 4 ticks
+            MULI   V1,1000         ;1000 because I am passing the values for the other cycles multiplied by 100
+            DELAY  V1             ;move only Isomed after time defined in the script
             DIGOUT [....ii..]      ;First rotation
-            MOV    V1,V15,-2       ;-3 because of current instruction + the next ones is 3 ticks
-            ;MULI   V1,1000
+            MOV    V1,V15,-3       ;-3 because of current instruction + the next ones is 3 ticks
+            MULI    V1,1000
             DELAY  V1
             DIGOUT [....ii..]      ;Second rotation
-            MOV    V1,V16,-2       ;-3 because of current instruction + the next ones is 3 ticks  
-            ;MULI   V1,1000
+            MOV    V1,V16,-3       ;-3 because of current instruction + the next ones is 3 ticks  
+            MULI   V1,1000
             DELAY  V16             ;3 steps caluclation of the ticks operations
             DAC    1,0
             HALT
@@ -237,17 +237,17 @@ END:        DELAY  V1              ;-3 because of MOV,MULI,JUMP
 
 ;Do I have to always send the var via script or it's because I use DBNZ directly on the variable which goes to 0?
 ;STIM and ONE ROTATION
-TESTPT: 'A DAC   1,4
+;TESTPT: 'A DAC   1,4
            ;DIGOUT [....ii..] ;trigger rot 
-VAR     V1,level=VDAC16(59) ;level to cross
-         VAR     V2,data          ;to hold the last data
-         VAR     V3,low=VDAC16(61)    ;some sort of hysteresis level
-           DIGOUT [....ii..] ;trigger rot 
-BELOW:   CHAN    data,2           ;read latest data   >wait below
-         BGT     data,low,below   ;wait for below     >wait below
-ABOVE:   CHAN    data,2           ;read latest data   >wait above
-         BLE     data,level,above ;wait for above     >wait above
-         DIGOUT  [.......1]       ;pulse output...
-         DIGOUT  [.......0];...wait for below
-        DAC 1,0
-        HALT                     ; next task...
+;VAR     V1,level=VDAC16(59) ;level to cross
+;         VAR     V2,data          ;to hold the last data
+;         VAR     V3,low=VDAC16(61)    ;some sort of hysteresis level
+;           DIGOUT [....ii..] ;trigger rot 
+;BELOW:   CHAN    data,2           ;read latest data   >wait below
+;         BGT     data,low,below   ;wait for below     >wait below
+;ABOVE:   CHAN    data,2           ;read latest data   >wait above
+;         BLE     data,level,above ;wait for above     >wait above
+;         DIGOUT  [.......1]       ;pulse output...
+;         DIGOUT  [.......0];...wait for below
+;        DAC 1,0
+;        HALT                     ; next task...

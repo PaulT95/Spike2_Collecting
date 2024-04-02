@@ -252,7 +252,7 @@ end;
 Func New%()
 
     FileOpen("",6,1,"Select Sampling config file"); 'open dialog to load sampling config file
-    SampleSequencer("Z:/Paolo/Spike_Config_Beta/fs_sequencer_adaptable.pls");     'sets sequencer file to use
+    SampleSequencer("D:/Paolo/Spike_Config_Beta/fs_sequencer_adaptable.pls");     'sets sequencer file to use
     Message("WARNING! DISABLE ISOMED TRIGGER! Depending on the selected program rotation might occur.");
 
     mainVH% := FileNew(0, 1);    'creates a new sampling data file / time view
@@ -734,11 +734,8 @@ case samplekey$ = "M" or samplekey$ = "N" then 'NOT USING SAMPLE KEY because if 
   SampleSeqVar(20,  n_Stim%);' Stim_Set[3]); 'num of stimulation to send = repeating loop
 
 case samplekey$ = "STIM2" then Message("No sequencer created yet, baustelle!")
-case samplekey$ = "S" then
-    SampleSeqVar(11,(TP_Isomed[0]* TickClk));
-    SampleSeqVar(15,((TP_Isomed[1]-TP_Isomed[0])*TickClk));
-    SampleSeqVar(16,((xywidth-TP_Isomed[1])*TickClk));
-else 'default' with US sync frame line in @ 100Hz
+    
+else 'default' with US sync frame line in @ 100Hz, for SSC var 11, 15 and 16 are MULI in the sequencer, so no worries, it works for SSC too.
   SampleSeqVar(10,xywidth*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
   SampleSeqVar(11,(TP_Isomed[0]*100)-2); '-2 otherwise there is a shift of ~120ms due to a duty cycle for triggering the US
   SampleSeqVar(12,(TP_Isomed[1]*100)-1);
