@@ -17,7 +17,7 @@ var n% := 1; 'var for IDLE for checking how many contraction'
 var TP_Isomed[2] := {4, 10};
 var Stim_Set[3] := {5,6,50}; 'beginning, end, frequency of the stimulation
 var n_Stim% := 50;
-var StimP_set[4] := {5,0,0,0};
+var StimP_set[5] := {1,5,0,0,0};
 
 var TP_DAC3 := 4;
 'Temporary trash variables for multiple functions
@@ -127,7 +127,6 @@ Proc DoToolbar()
     DisplayButtons();
     Toolbar("Collect some awesome data!!!",231);
 end;
-
 
 'DISABLE OR ENABLE TOOLBAR BUTTONS*************************************************
 Proc DisplayButtons()
@@ -665,9 +664,9 @@ Func SetEquipment%()
         case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 1 and savetrue% = 1 and StimP% = 0 then samplekey$ := "M"; 'US through the cmd window, TTL DAC1 for whatever
         case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 1 and savetrue% = 1 and StimP% = 0 then samplekey$ := "N"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
         'TO DO: Stim at specific value
-        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := ""; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
-        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := ""; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
-        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := ""; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "A"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "A"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "A"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
 
         else samplekey$ := "n"; Message("No sequener instruction found");    'just instructs the sequencer to HOLD
     endcase;
@@ -733,8 +732,10 @@ case samplekey$ = "M" or samplekey$ = "N" then 'NOT USING SAMPLE KEY because if 
   SampleSeqVar(19, (1/Stim_Set[2]) * TickClk ); 'delta time for the delay in the seq loop
   SampleSeqVar(20,  n_Stim%);' Stim_Set[3]); 'num of stimulation to send = repeating loop
 
-case samplekey$ = "STIM2" then Message("No sequencer created yet, baustelle!")
-    
+case samplekey$ = "A" then 'Message("No sequencer created yet, baustelle!")
+    SampleSeqVar(50,StimP_set[0]); 'channel to check
+    SampleSeqVar(51,StimP_set[1]); 'value to check
+
 else 'default' with US sync frame line in @ 100Hz, for SSC var 11, 15 and 16 are MULI in the sequencer, so no worries, it works for SSC too.
   SampleSeqVar(10,xywidth*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
   SampleSeqVar(11,(TP_Isomed[0]*100)-2); '-2 otherwise there is a shift of ~120ms due to a duty cycle for triggering the US
@@ -774,7 +775,7 @@ Func RepXY%()
     DlgLabel(11, "Number of stimulations: " + Str$(n_Stim%));
     'Necessary to design the different sequencer instruction as torque might be the same at different position for example'
     DlgGroup("Stimulation settings to stimulate at a specific value",1,12, 80, 6);
-    DlgLabel(13,"The stimulation value refers to the channel selected in the XY-Ramp");
+    DlgChan(13, "Select channel to check and send signal", 0x40000);
     DlgReal(14, "Stim at (insert numeric value)",-1000,1000);
     DlgCheck(15,"Stim before triggering first rotation");
     DlgCheck(16,"Stim during/after Isomed rotation 1");
@@ -785,8 +786,8 @@ Func RepXY%()
     'Remember: thoraway is used because DlgGroup is a variable return as the Dlg starts one number after
     'if DlgReal(1,xxx), DlgGroup(bla), DlgReal(3,xxx); then the element 2 is returned as whatsoever so put in throaway.
     'it is used to make it easier to create the correct size of the dialog input
-    throaway% := DlgShow( throaway%, throaway%, repXYcycle%, throaway%, TP_Isomed, throaway%, Stim_Set, throaway%,throaway%,throaway%, StimP_set);
-
+    throaway% := DlgShow( throaway%, throaway%, repXYcycle%, throaway%, TP_Isomed, throaway%, Stim_Set, throaway%,throaway%, StimP_set);
+    PrintLog(StimP_set[0]);
     'If OK is pressed sort Isomed rotation and calculate new stimulation train
     if throaway% > 0 then
         'SORT for the idiots that wanna try finding a bug
@@ -845,7 +846,7 @@ Func WriteFileName%()
             'if you tick Ultrasound then Run The script.EXE for saving the TVD file automatically with the Path and File Name
              if uscheck% = 1 and shitCheck% = 0 then
                  NameFiles$ := FilePath$() + ItemText$;
-                 ProgRun("C:/Users/Messung/Desktop/SaveECO.exe " + NameFiles$);    'Set the path of where you put the EXE file!
+                 ProgRun("C:/Users/Biomech/Desktop/SaveECO.exe " + NameFiles$);    'Set the path of where you put the EXE file!
              endif;
 
              if shitCheck% = 0  then break; endif; 'if you save/overwrite just break and return'
@@ -884,6 +885,7 @@ Func StopSampling%()
     var ret%;
     ret% := Query("Are you sure you wish to stop sampling?");    'dialog box to say yes or no to stopping the sampling process
     if ret% = 1 then
+        SampleKey("Q");    'put ALL BITs back to 0
         FrontView(mainVH%);
         SampleStop();
     endif;
