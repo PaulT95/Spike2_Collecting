@@ -2,7 +2,7 @@
 
 'GLOBAL VARIABLE DECLARATIONS*****************************************************
 'View handles
-var mainVH% := 0;
+var mainVH% := 0; 'FileOpen("Y:\\Documents\\MATLAB\\PhD\\DATA\\TTM\\KJ\\Post\\L\\All.smrx",0, 3); '0
 var mvcVH%, xyVH%;
 var drawView%;                                              				'Result view for drawing ramp
 
@@ -19,7 +19,6 @@ var Stim_Set[3] := {5,6,50}; 'beginning, end, frequency of the stimulation
 var n_Stim% := 50;
 var StimP_set[5] := {1,5,0,0,0};
 
-var TP_DAC3 := 4;
 'Temporary trash variables for multiple functions
 var x%, throaway%;
 var startramp := -100;    'so that maxtime is always greater than startramp unless changed by GetXYData()
@@ -96,13 +95,15 @@ var TraceToPlot[1];                                                     'initial
 'SET FILE PATH AND CREATE TOOLBAR**************************************************
 if App(-1)<701 then Message("This script needs at least Spike2 version 7.01"); halt endif;	'Checks for the latest version of Spike2
 FilePathSet("", 0, "Where do you want to save everything?");
-DoToolbar();
+'SampleSequencer("Y:\\Desktop\\fs_sequencer_adaptable_TEST.pls");     'sets sequencer file to use
 
+DoToolbar();
 
 'CREATE THE TOOLBAR****************************************************************
 Proc DoToolbar()
     ToolbarClear();
     ToolbarSet(0, "", Idle%);
+    'ToolbarSet(27,"Seq_write", SwitchChannel%);
     ToolbarSet(25,"Draw Trace",MakeWave%);
     ToolbarSet(22, "Start Sampling", New%);
     ToolbarSet(20, "Change View", ChangeView%);
@@ -127,6 +128,7 @@ Proc DoToolbar()
     DisplayButtons();
     Toolbar("Collect some awesome data!!!",231);
 end;
+
 
 'DISABLE OR ENABLE TOOLBAR BUTTONS*************************************************
 Proc DisplayButtons()
@@ -664,9 +666,9 @@ Func SetEquipment%()
         case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 1 and savetrue% = 1 and StimP% = 0 then samplekey$ := "M"; 'US through the cmd window, TTL DAC1 for whatever
         case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 1 and savetrue% = 1 and StimP% = 0 then samplekey$ := "N"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
         'TO DO: Stim at specific value
-        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "A"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
-        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "A"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
-        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "A"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "STIM2"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "STIM2"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "STIM2"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
 
         else samplekey$ := "n"; Message("No sequener instruction found");    'just instructs the sequencer to HOLD
     endcase;
@@ -679,7 +681,6 @@ Func Snippet%()
 
     if (samplekey$ = "n") then
         Message("No equipment option selected");
-
     else
         allXY% := xywidth * repXYcycle%; 'calculate overall XY duration'
         'prepare a cursor from which on the snippet can be saved
@@ -691,21 +692,24 @@ Func Snippet%()
         CursorActive(0,14, 31, 0, "", "", 1);   'Data points --> keyboard. Make cursor 0 active to search keyboard
         'easy to navigate everytime you snippet'
 
-        'Pass values to vars to the sequencer'
+        'Pass values to the sequencer variables'
         SetUp_VarSeq%(); 'Firt snippet Send Vars to sequencer'
 
         'you can't rely on the timing of the cursor positions for post-analysis, therefore save an extra second beforehand,
         'such that you can always refer to your event timestamp or TTL channels as common signal
         Yield(1);
+        
+        SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
+        GetXYData%();   'sets startramp variable to current time so that biofeedback can be given
 
-        if samplekey$ = "M" or samplekey$ = "N" then'whatever instruction requires the sequecer to stimulate specifically or checking real time variable for stimulation then
+        'this is a bit delay because of EchoWave it self'
+        if samplekey$ = "M" or samplekey$ = "N" then 'whatever instruction requires the sequecer to stimulate specifically or checking real time variable for stimulation then
           ProgRun("C:/Users/Messung/Desktop/EchoWaveCMD.exe Run");    'Set the path of where you put the EXE file! Run in case of stimulation as the sequencer needs to be free
         endif
 
         CursorNew(MaxTime(),1);    'set the cursor1 already in the main view
         Cursor(1,MaxTime());
-        GetXYData%();   'sets startramp variable to current time so that biofeedback can be given
-        SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
+
         if savetrue% = 1 then idlesave% := 1; endif;    'idle function checks for state of idlesave% variable
         if storecramp% = 1 then idlecramp% :=1; endif;     'idle function checks for state of idlecramp% variable
     endif
@@ -713,11 +717,11 @@ Func Snippet%()
 
 end;
 
-'FUNCTION TO CHECK LAST XY view AND SETUP THE SEQUENCER BEFORE SNIPPET**********
+'FUNCTION TO CHECK LAST XY view AND SETUP THE SEQUENCER BEFORE SNIPPET************************
 Func SetUp_VarSeq%()
 
 var TickClk := 1 / (SampleSeqClock(1) / 1000); 'get running seq clock '100000;'SampleSeqClock(1); /1000 because in ms
-
+'var TickClk := 100000;
 'Adjust stuff '
 docase
 case samplekey$ = "M" or samplekey$ = "N" then 'NOT USING SAMPLE KEY because if I change the parameters in seq settings it does not change sample to STIM1 again
@@ -732,15 +736,20 @@ case samplekey$ = "M" or samplekey$ = "N" then 'NOT USING SAMPLE KEY because if 
   SampleSeqVar(19, (1/Stim_Set[2]) * TickClk ); 'delta time for the delay in the seq loop
   SampleSeqVar(20,  n_Stim%);' Stim_Set[3]); 'num of stimulation to send = repeating loop
 
-case samplekey$ = "A" then 'Message("No sequencer created yet, baustelle!")
-    SampleSeqVar(50,StimP_set[0]); 'channel to check
-    SampleSeqVar(51,StimP_set[1]); 'value to check
+case samplekey$ = "STIM2" then 'Message("No sequencer created yet, baustelle!");
 
+    SwitchChannel%(StimP_set[0]); 'Update sequencer instructions with the desired channel
+    'Convert back from Plot to DAC16 in Voltage' y axis value = (16-bit value)*scale/6553.6 + offset
+    var ChScale := ChanScale(StimP_set[0]);
+    var ChOffset := ChanOffset(StimP_set[0]);
+    var Threshold := 0.00016; 'round(1/6553.6), bit resolution
+    'Convert back to voltage for sequencer purpose --> Volt_Val = (Channel - offset) / scale;
+    SampleSeqVar(30,( (StimP_set[1] - ChOffset) / ChScale) - Threshold );
+    SampleSeqVar(31,( (StimP_set[1] - ChOffset) / ChScale) + Threshold );
 else 'default' with US sync frame line in @ 100Hz, for SSC var 11, 15 and 16 are MULI in the sequencer, so no worries, it works for SSC too.
   SampleSeqVar(10,xywidth*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
   SampleSeqVar(11,(TP_Isomed[0]*100)-2); '-2 otherwise there is a shift of ~120ms due to a duty cycle for triggering the US
   SampleSeqVar(12,(TP_Isomed[1]*100)-1);
-  'SampleSeqVar(13,(TP_DAC3*100)-2);
   SampleSeqVar(14,((xywidth-TP_Isomed[0])*100));
   SampleSeqVar(15,((TP_Isomed[1]-TP_Isomed[0])*100)-1);
   SampleSeqVar(16,((xywidth-TP_Isomed[1])*100));
@@ -751,7 +760,6 @@ else 'default' with US sync frame line in @ 100Hz, for SSC var 11, 15 and 16 are
   SampleSeqVar(19, n_Stim%);' Stim_Set[3]); 'num of stimulation to send = repeating loop
   SampleSeqVar(20, (xywidth - Stim_Set[1]) * TickClk); 'delay to the end of the XY view
 
-  'SampleSeqVar(17,((xywidth-TP_DAC3)*100)); 'There will be always an "error" of <~3-12ms when Repeating because of the Clock of CPU
  endcase
   return 1;
 end
@@ -774,7 +782,7 @@ Func RepXY%()
     DlgReal(10, "Frequency (Hz)", 0, 5000);
     DlgLabel(11, "Number of stimulations: " + Str$(n_Stim%));
     'Necessary to design the different sequencer instruction as torque might be the same at different position for example'
-    DlgGroup("Stimulation settings to stimulate at a specific value",1,12, 80, 6);
+     DlgGroup("Stimulation settings to stimulate at a specific value",1,12, 80, 6);
     DlgChan(13, "Select channel to check and send signal", 0x40000);
     DlgReal(14, "Stim at (insert numeric value)",-1000,1000);
     DlgCheck(15,"Stim before triggering first rotation");
@@ -787,7 +795,7 @@ Func RepXY%()
     'if DlgReal(1,xxx), DlgGroup(bla), DlgReal(3,xxx); then the element 2 is returned as whatsoever so put in throaway.
     'it is used to make it easier to create the correct size of the dialog input
     throaway% := DlgShow( throaway%, throaway%, repXYcycle%, throaway%, TP_Isomed, throaway%, Stim_Set, throaway%,throaway%, StimP_set);
-    PrintLog(StimP_set[0]);
+    'PrintLog(StimP_set[0]);
     'If OK is pressed sort Isomed rotation and calculate new stimulation train
     if throaway% > 0 then
         'SORT for the idiots that wanna try finding a bug
@@ -846,7 +854,7 @@ Func WriteFileName%()
             'if you tick Ultrasound then Run The script.EXE for saving the TVD file automatically with the Path and File Name
              if uscheck% = 1 and shitCheck% = 0 then
                  NameFiles$ := FilePath$() + ItemText$;
-                 ProgRun("C:/Users/Biomech/Desktop/SaveECO.exe " + NameFiles$);    'Set the path of where you put the EXE file!
+                 ProgRun("C:/Users/Messung/Desktop/SaveECO.exe " + NameFiles$);    'Set the path of where you put the EXE file!
              endif;
 
              if shitCheck% = 0  then break; endif; 'if you save/overwrite just break and return'
@@ -903,7 +911,6 @@ Func SaveData%()
 end;
 
 'SELECT WHICH ANALYSIS SHOULD BE PERFORMED WHEN CLICKING SNIPPET******************
-'TODO: Add a field which sets the number of seconds stuff should be sampled --> pass this to the sequencer'
 Func SetAnalysisOpts%()
 
     DlgCreate("Select analysis");
@@ -964,7 +971,6 @@ Func quickAnalysis%(which%)
   HCursorActive(2,5, Cursor(2), Cursor(3), 0, 0);   ' Cursor 2 Min level
 
 '''''''''''''''''' HERE in case you can play around with the cursor 2-3 to detect whatever you want
-
     docase
         case which% = 1 then CursorOpen(1, 1, -2, 10); '10 = Peak2Peak
         case which% = 2 then CursorOpen(1, 1, -2, 1); '1 = Area
@@ -1075,3 +1081,49 @@ if bin% >= 0 and bin% <= Len([])-1 then                         		'If within are
 endif;
     return 1;
 end;
+
+'UPDATE SEQUENCER AND SWITCH CHANNEL*************************************************************************
+Func SwitchChannel%(ChanToChk%)
+'Read each line and find the one with Channel
+'Create a new line with the new channel selected from the list in the script
+'Use find and replace to find the exact string and replace with the newer one
+'Save and load the sequencer again with the updated info
+var ChTitle$ := ChanTitle$(ChanToChk%);
+'var seq% := FileOpen("*.pls",2,0,"Select seq file"); 'open dialog to load txt file with ramp 'invisible
+    var seq% := FileOpen(SampleSequencer$(),2,0); 'open the running/selected sequencer
+    'View(seq%);'Jump to the previously created sequencer/text view'
+    if (seq% > 0) then     ' if we opened a file...
+                    ReadSetup("\n"); 'check the format of the file!!!
+                    var line$; 'later add two for because I initiliaze or adjust array based on the length of the sequencer
+                    MoveTo(0,0); 'Move to file start
+
+                    var i% := 0;
+                    var tempY$, OlDChLine$, NewChLine$;
+
+                    while Read(line$) >= 0 do 'read until the lines are finished
+
+                            if InStr(line$,"CHAN")>0 then 'Returns >0 if found, 0 if not
+                                OlDChLine$:= line$; 'Keep oldChLine for edit and replace later
+                                throaway% := InStr(line$,","); 'position of the comma, use the throaway var
+                                'Find chan selected after comma
+                                tempY$ := Mid$(line$,throaway%+1); 'y is the second part, so read the char after the comma to end
+                                NewChLine$ := Replace$(line$,tempY$," " + Str$(ChanToChk%) + "  ;Read data of " + ChTitle$); '" space N_ch ;Title channel"
+                                'FIND THE MATCHED STRING and REPLACE WITH NEW CHANNEL INFO
+                                MoveTo(0,0,i%+1); 'Move to line above for replace forward because the cursor go to line next
+                                EditFind(OlDChLine$, 1, 0); ' forward
+                                EditReplace(OlDChLine$, NewChLine$, 0, 0); 'Backwards
+                                MoveTo(0,0,i%+2); 'Skip last replace
+                            endif
+                            i% := i% +1;   'move to the next line
+                    wend;
+    endif;
+
+    View(seq%);'‘Jump to the previously created sequencer/text view'
+    FileSave(); 'Save updated Sequencer
+    FileClose();
+    'Re-run the newever updated sequencer DURING sampling
+    SampleSequencer(4, SampleSequencer$()); '4 for replace running sequencer
+
+    return 1;
+
+end
