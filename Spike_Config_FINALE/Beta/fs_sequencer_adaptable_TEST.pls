@@ -57,7 +57,7 @@ OISOMED: 'S DAC    1,4             ;TTL from DAC1
             DIGOUT [....ii..]      ;Second rotation
             MOV    V1,V16,-3       ;-3 because of current instruction + the next ones is 3 ticks
             MULI   V1,1000
-            DELAY  V16             ;3 steps caluclation of the ticks operations
+            DELAY  V1             ;3 steps caluclation of the ticks operations
             DAC    1,0
             HALT
 
