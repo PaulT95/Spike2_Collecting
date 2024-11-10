@@ -133,25 +133,25 @@ end;
 'DISABLE OR ENABLE TOOLBAR BUTTONS*************************************************
 Proc DisplayButtons()
     docase
-    case mainVH% <= 0 then
-        ToolbarEnable(1, 0);
-        ToolbarEnable(2, 0);
-        ToolbarEnable(3, 0);
-        ToolbarEnable(5, 0);
-        ToolbarEnable(6, 0);
-        ToolbarEnable(7, 0);
-        ToolbarEnable(8, 0);
-        ToolbarEnable(9,  0);
-        ToolbarEnable(10, 0);
-        ToolbarEnable(11, 0);
-        ToolbarEnable(13, 0);
-        'ToolbarEnable(15, 0);
-        ToolbarEnable(18, 0);
-        ToolbarEnable(19, 0);
-        ToolbarEnable(20, 0);
-        ToolbarEnable(25, 0);
+'    case mainVH% <= 0 then
+'        ToolbarEnable(1, 0);
+'        ToolbarEnable(2, 0);
+'        ToolbarEnable(3, 0);
+'        ToolbarEnable(5, 0);
+'        ToolbarEnable(6, 0);
+'        ToolbarEnable(7, 0);
+'        ToolbarEnable(8, 0);
+'        ToolbarEnable(9,  0);
+'        ToolbarEnable(10, 0);
+'        ToolbarEnable(11, 0);
+'        ToolbarEnable(13, 0);
+'        'ToolbarEnable(15, 0);
+'        ToolbarEnable(18, 0);
+'        ToolbarEnable(19, 0);
+'        ToolbarEnable(20, 0);
+'        ToolbarEnable(25, 0);
 
-    case mainVH% >= 0 then
+    case mainVH% <= 0 then
         ToolbarEnable(1, 0);
         ToolbarEnable(2, 1);
         ToolbarEnable(3, 1);
@@ -167,7 +167,7 @@ Proc DisplayButtons()
         ToolbarEnable(18, 1);
         ToolbarEnable(19, 1);
         ToolbarEnable(20, 1);
-        ToolbarEnable(22, 0);
+        ToolbarEnable(22, 1);
         ToolbarEnable(25, 1);
 
     endcase;
@@ -768,7 +768,7 @@ end
 Func RepXY%()
 
     DlgCreate("Repetitive XY & Sequencer Configuration");
-    DlgLabel(1,"I suggest to tick 'GAME MODE' in XY-Ramp for having better feedback for the subjects");
+    DlgLabel(1,"If repetition of XY > 1, please tick GAME-MODE in the XY ramp");
     DlgLabel(2,"CAUTION! The Snippet is working based on the XY-width value and not the last TimePoint value!");
     DlgInteger(3,"Repetition of the XY view", 1, 60);    'there are certain cases when this is annoying and you need to close and open the dialog again
 

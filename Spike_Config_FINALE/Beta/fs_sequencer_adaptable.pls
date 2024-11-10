@@ -27,9 +27,14 @@
 ISOMED: 'I  DIGOUT [....ii..]      ;move Isomed
             HALT
 
-;QUIT AND PUT DIGOUT 0
+;QUIT AND PUT ALL BIT BACK TO 0
 QUIT:   'Q DIGOUT [00000000]
+           DAC 0, 0
+           DAC 1, 0
+           DAC 2, 0
+           DAC 3, 0
            HALT
+
 ;DEFINITIONS FOR TESTING PURPOSES APART FROM THE STUDY PROTOCOL
 ;INFINITE ULTRASOUND DUTYCYCLE
 
@@ -44,7 +49,7 @@ INFUS:  'U  DAC    2,4             ;INFINITE US
 ;DEFINITIONS FOR n SECOND USE OF SINGLE OR COMBINATION OF MEASUREMENT EQUIPMENT
 
 ;MOVE ISOMED TWICE FOR FAST Stretch-shortening/ Shortening Stretch cycle.
-OISOMED: 'S DAC    1,4             ;TTL from DAC1
+OISOMED: 'S DAC    1,3             ;TTL from DAC1
             MOV    V1,V11,-2       ; -2 because of this and the upcoming instruction till delay are 4 ticks
             MULI   V1,1000         ;1000 because I am passing the values for the other cycles multiplied by 100
             DELAY  V1             ;move only Isomed after time defined in the script
@@ -53,7 +58,7 @@ OISOMED: 'S DAC    1,4             ;TTL from DAC1
             MULI    V1,1000
             DELAY  V1
             DIGOUT [....ii..]      ;Second rotation
-            MOV    V1,V16,-3       ;-3 because of current instruction + the next ones is 3 ticks  
+            MOV    V1,V16,-3       ;-3 because of current instruction + the next ones is 3 ticks
             MULI   V1,1000
             DELAY  V16             ;3 steps caluclation of the ticks operations
             DAC    1,0
@@ -62,7 +67,7 @@ OISOMED: 'S DAC    1,4             ;TTL from DAC1
 
 ;ONLY ULTRASOUND AS XY WIDTH
 ;only TTL DAC2 WITH DUTY CYCLE @ 100Hz FOR THE US
-ULTRAREP: 'u DAC   1,4
+ULTRAREP: 'u DAC   1,3
             MOV    V1,V10          ;copy the variable V10 in V1, so I do not need to pass everytime in the Idle
 USONLY:     DAC    2,4
             DELAY  s(1/200)-4
@@ -73,7 +78,7 @@ USONLY:     DAC    2,4
             HALT
 
 ;US (DAC2) 100Hz and TTL MYON (DAC1) FOR XY WIDTH AND MOVE ISOMED @sec V11
-MYOUSIMO: 'J DAC   1,4             ;TTL from DAC1 and THEN duty cycle 100Hz DAC2 for US
+MYOUSIMO: 'J DAC   1,3             ;TTL from DAC1 and THEN duty cycle 100Hz DAC2 for US
             MOV    V1,V11          ;copy the variable V11 in V1, so I do not need to pass everytime in the Idle
             MOV    V2,V14          ;copy the variable V14 in V2, so I do not need to pass everytime in the Idle
 ULTRAMU:    DAC    2,4
@@ -98,7 +103,7 @@ ULTRAMU2:   DAC    2,4
 
 
 ;US (DAC2) 100Hz and TTL (DAC1) FOR XY WIDTH AND MOVE ISOMED TWICE
-MYUSISOS: 'k DAC   1,4             ;TTL from DAC1 and THEN duty cycle 100Hz DAC2 for US
+MYUSISOS: 'k DAC   1,3             ;TTL from DAC1 and THEN duty cycle 100Hz DAC2 for US
             MOV    V1,V11          ;copy the variable V11 in V1, so I do not need to pass everytime in the Idle
             MOV    V2,V15          ;copy the variable V15 in V2, so I do not need to pass everytime in the Idle
             MOV    V3,V16          ;copy the variable V16 in V3, so I do not need to pass everytime in the Idle
@@ -137,7 +142,7 @@ ULTRAMH:    DAC    2,4
 ;STIMULATION PART: WE USE THE DIGITAL BIT 0(ZERO) IN THE FRONT PANEL OF THE 1401
 
 ;STIM AND NO rotation
-STIMFIX: 'M DAC    1,4             ;TTL from DAC1 and then stimulation train
+STIMFIX: 'M DAC    1,3             ;TTL from DAC1 and then stimulation train
             MOV    V1,V20          ;Rep Stimlation
             MOV    V2,V99,-1
             SUB    V2,V18,-1       ;delay till end XY
@@ -156,7 +161,7 @@ FIRSTTR:    DIGOUT [0000..01]      ;send signal to front panel digital output 0
 ;in every cycle, so I do not need to pass tons of variables
 
 ;STIM and ONE ROTATION
-STIMONER: 'N DAC   1,4
+STIMONER: 'N DAC   1,3
              ;MOV V1,V11 ;copy V11 into 1
              ;BGE V1, V17 ;if Isomed rotation starts the same or after stimulation begin
              ;SUB V1,V17 ;potentially add a tick to V1 and fuck off
@@ -209,7 +214,7 @@ MID:        MOV    V2,V11,-1
 
             MOV    V3,V18
             SUB    V3,V11              ;delta time between rotation to end of stimulation
-            DIV    V3,V19          ;n stim to end, +1 because one instruction is lost due to digout 
+            DIV    V3,V19          ;n stim to end, +1 because one instruction is lost due to digout
 
             DELAY  V17             ;5+1 instructions before
 
@@ -224,10 +229,10 @@ LOOPosR:    DIGOUT [0000..01]      ;send signal
             DIGOUT [0000..00]
             DELAY  V19             ;delay based on delta t of the frequency
             DBNZ   V3,LOOPosR      ;REP STIMULATIONS according to n stimulation
-            
+
             ;DIGOUT [0000..01]      ;send last stim signal
             ;DIGOUT [0000..00]
-            
+
             MOV    V1,V99,-1
             SUB    V1,V18,-1       ;delay till end XY
             JUMP   END
@@ -237,14 +242,16 @@ END:        DELAY  V1              ;-3 because of MOV,MULI,JUMP
             DAC    1,0
             HALT
 
-;Do I have to always send the var via script or it's because I use DBNZ directly on the variable which goes to 0?
-;STIM and ONE ROTATION
-;TESTPT: 'A DAC   1,4
-           ;DIGOUT [....ii..] ;trigger rot 
+
+;STIM and ONE ROTATION/ Stim at a specific time point, however, be careful because if I SET
+;any value to CHAN, but in my sampling config there is no CHAN number 2, the sequencer crash!
+;so when we I ran the sequencer in the beginning I should put a check that CHAN saved here exists
+;TESTPT: 'A DAC   1,3
+           ;DIGOUT [....ii..] ;trigger rot
 ;VAR     V1,level=VDAC16(59) ;level to cross
 ;         VAR     V2,data          ;to hold the last data
 ;         VAR     V3,low=VDAC16(61)    ;some sort of hysteresis level
-;           DIGOUT [....ii..] ;trigger rot 
+;           DIGOUT [....ii..] ;trigger rot
 ;BELOW:   CHAN    data,2           ;read latest data   >wait below
 ;         BGT     data,low,below   ;wait for below     >wait below
 ;ABOVE:   CHAN    data,2           ;read latest data   >wait above
