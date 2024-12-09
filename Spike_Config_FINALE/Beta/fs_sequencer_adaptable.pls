@@ -243,20 +243,22 @@ END:        DELAY  V1              ;-3 because of MOV,MULI,JUMP
             HALT
 
 
-;STIM and ONE ROTATION/ Stim at a specific time point, however, be careful because if I SET
-;any value to CHAN, but in my sampling config there is no CHAN number 2, the sequencer crash!
-;so when we I ran the sequencer in the beginning I should put a check that CHAN saved here exists
-;TESTPT: 'A DAC   1,3
-           ;DIGOUT [....ii..] ;trigger rot
-;VAR     V1,level=VDAC16(59) ;level to cross
-;         VAR     V2,data          ;to hold the last data
-;         VAR     V3,low=VDAC16(61)    ;some sort of hysteresis level
-;           DIGOUT [....ii..] ;trigger rot
-;BELOW:   CHAN    data,2           ;read latest data   >wait below
-;         BGT     data,low,below   ;wait for below     >wait below
-;ABOVE:   CHAN    data,2           ;read latest data   >wait above
-;         BLE     data,level,above ;wait for above     >wait above
-;         DIGOUT  [.......1]       ;pulse output...
-;         DIGOUT  [.......0];...wait for below
-;        DAC 1,0
-;        HALT                     ; next task...
+;;;;;;;;;;;;;;;;;;;
+;STIM and ONE ROTATION/ Stim at a specific time point
+
+TESTPT: 'A DAC   1,3
+         ;DIGOUT [....ii..] ;trigger rot
+         VAR     V1,level ;level to cross
+         VAR     V2,data          ;to hold the last data
+         VAR     V3,low   ;some sort of hysteresis level
+         MOV     level, V22
+         MOV     low, V23 ;copy converted voltage values BUT maybe directly pass values and use VDAC16 
+         DIGOUT [....ii..] ;trigger rot
+BELOW:   CHAN    data, 4  ;Read data of LoadCell
+         BGT     data,low,below   ;wait for below     >wait below
+ABOVE:   CHAN    data, 4  ;Read data of LoadCell
+         BLE     data,level,above ;wait for above     >wait above
+         DIGOUT  [.......1]       ;pulse output...
+         DIGOUT  [.......0];...wait for below
+         DAC 1,0
+         HALT                     ; next task...

@@ -93,7 +93,7 @@ var outZero := 0;                                                       'DAC zer
 var TraceToPlot[1];                                                     'initialize to 1 and then resize according to the length
 'THE SCRIPT STARTS HERE BY CHECKING THE SPIKE VERSION AND INITIALIZING TOOLBAR
 'SET FILE PATH AND CREATE TOOLBAR**************************************************
-if App(-1)<701 then Message("This script needs at least Spike2 version 7.01"); halt endif;	'Checks for the latest version of Spike2
+if App(-1)<1001 then Message("This script needs at least Spike2 version 10.01"); halt endif;	'Checks for the latest version of Spike2
 FilePathSet("", 0, "Where do you want to save everything?");
 'SampleSequencer("Y:\\Desktop\\fs_sequencer_adaptable_TEST.pls");     'sets sequencer file to use
 
@@ -133,23 +133,23 @@ end;
 'DISABLE OR ENABLE TOOLBAR BUTTONS*************************************************
 Proc DisplayButtons()
     docase
-'    case mainVH% <= 0 then
-'        ToolbarEnable(1, 0);
-'        ToolbarEnable(2, 0);
-'        ToolbarEnable(3, 0);
-'        ToolbarEnable(5, 0);
-'        ToolbarEnable(6, 0);
-'        ToolbarEnable(7, 0);
-'        ToolbarEnable(8, 0);
-'        ToolbarEnable(9,  0);
-'        ToolbarEnable(10, 0);
-'        ToolbarEnable(11, 0);
-'        ToolbarEnable(13, 0);
-'        'ToolbarEnable(15, 0);
-'        ToolbarEnable(18, 0);
-'        ToolbarEnable(19, 0);
-'        ToolbarEnable(20, 0);
-'        ToolbarEnable(25, 0);
+    case mainVH% <= 0 then
+        ToolbarEnable(1, 0);
+        ToolbarEnable(2, 0);
+        ToolbarEnable(3, 0);
+        ToolbarEnable(5, 0);
+        ToolbarEnable(6, 0);
+        ToolbarEnable(7, 0);
+        ToolbarEnable(8, 0);
+        ToolbarEnable(9,  0);
+        ToolbarEnable(10, 0);
+        ToolbarEnable(11, 0);
+        ToolbarEnable(13, 0);
+        'ToolbarEnable(15, 0);
+        ToolbarEnable(18, 0);
+        ToolbarEnable(19, 0);
+        ToolbarEnable(20, 0);
+        ToolbarEnable(25, 0);
 
     case mainVH% <= 0 then
         ToolbarEnable(1, 0);
@@ -190,9 +190,8 @@ Func Idle%()
           XYAddData(fdbckCH%, resetT, lastdata);
         endif;  'draw the x value as relative time to be able to have static ramps
       if ((relativetime/xywidth) >= n%) then 'if repetitive, re-Send the sequencer instruct'
-        'SetUp_VarSeq%(); 'Send values to Sequencer for the new cycle TO CHECK IF KEEPS THE VALUES!
         SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
-        View(xyVH%); XYDelete(fdbckCH%); 'Solution to remove data form xy view'
+        View(xyVH%); XYDelete(fdbckCH%); 'Solution to remove data form xy view for repetitive cycle'
         n% := n% + 1; 'Potentially delete old point in the XY if becomes too slow'
       endif
         return 1;
@@ -254,13 +253,15 @@ Func New%()
 
     FileOpen("",6,1,"Select Sampling config file"); 'open dialog to load sampling config file
     SampleSequencer("D:/Paolo/Spike_Config_Beta/fs_sequencer_adaptable.pls");     'sets sequencer file to use
-    Message("WARNING! DISABLE ISOMED TRIGGER! Depending on the selected program rotation might occur.");
+    'SampleSequencer("C:\\users\\crossover\\Documents\\Spike2_Collecting-main\\Spike_Config_FINALE\\Beta\\fs_sequencer_adaptable.pls");
 
+    Message("WARNING! DISABLE ISOMED TRIGGER! Depending on the selected program rotation might occur.");
+    ChkList_Seq%(); 'Run the function to update the CHAN in the sequencer file and avoid crash. 
     mainVH% := FileNew(0, 1);    'creates a new sampling data file / time view
     WindowVisible(3);    'maximises window
     FrontView(mainVH%); 'unnecessary line?
 
-    SampleStart();
+    SampleStart(); 'After file FileNew for a new Time view based on the sampling config'
     DisplayButtons();
     return 1;
 end;
@@ -698,7 +699,7 @@ Func Snippet%()
         'you can't rely on the timing of the cursor positions for post-analysis, therefore save an extra second beforehand,
         'such that you can always refer to your event timestamp or TTL channels as common signal
         Yield(1);
-        
+
         SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
         GetXYData%();   'sets startramp variable to current time so that biofeedback can be given
 
@@ -742,10 +743,10 @@ case samplekey$ = "STIM2" then 'Message("No sequencer created yet, baustelle!");
     'Convert back from Plot to DAC16 in Voltage' y axis value = (16-bit value)*scale/6553.6 + offset
     var ChScale := ChanScale(StimP_set[0]);
     var ChOffset := ChanOffset(StimP_set[0]);
-    var Threshold := 0.00016; 'round(1/6553.6), bit resolution
+    var Threshold := 0.00016*2; 'round(1/6553.6), bit resolution * 2 because potential noise in the data
     'Convert back to voltage for sequencer purpose --> Volt_Val = (Channel - offset) / scale;
-    SampleSeqVar(30,( (StimP_set[1] - ChOffset) / ChScale) - Threshold );
-    SampleSeqVar(31,( (StimP_set[1] - ChOffset) / ChScale) + Threshold );
+    SampleSeqVar(22,( (StimP_set[1] - ChOffset) / ChScale) - Threshold );
+    SampleSeqVar(23,( (StimP_set[1] - ChOffset) / ChScale) + Threshold );
 else 'default' with US sync frame line in @ 100Hz, for SSC var 11, 15 and 16 are MULI in the sequencer, so no worries, it works for SSC too.
   SampleSeqVar(10,xywidth*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
   SampleSeqVar(11,(TP_Isomed[0]*100)-2); '-2 otherwise there is a shift of ~120ms due to a duty cycle for triggering the US
@@ -779,7 +780,7 @@ Func RepXY%()
     DlgGroup("Stimulation settings", 1, 7, 80,5);
     DlgReal(8, "Beginning Stimulation (s)", 0, xywidth-1);
     DlgReal(9, "End Stimulation (s)", 0, xywidth);
-    DlgReal(10, "Frequency (Hz)", 0, 5000);
+    DlgReal(10, "Frequency (Hz)", 0, 1000);
     DlgLabel(11, "Number of stimulations: " + Str$(n_Stim%));
     'Necessary to design the different sequencer instruction as torque might be the same at different position for example'
      DlgGroup("Stimulation settings to stimulate at a specific value",1,12, 80, 6);
@@ -1088,7 +1089,8 @@ Func SwitchChannel%(ChanToChk%)
 'Create a new line with the new channel selected from the list in the script
 'Use find and replace to find the exact string and replace with the newer one
 'Save and load the sequencer again with the updated info
-var ChTitle$ := ChanTitle$(ChanToChk%);
+'var ChTitle$ := ChanTitle$(ChanToChk%); 'This requires a time view to run
+var ChTitle$ := SampleTitle$(ChanToChk%); 'Use this because I check via config file BEFORE opening a time view
 'var seq% := FileOpen("*.pls",2,0,"Select seq file"); 'open dialog to load txt file with ramp 'invisible
     var seq% := FileOpen(SampleSequencer$(),2,0); 'open the running/selected sequencer
     'View(seq%);'Jump to the previously created sequencer/text view'
@@ -1127,3 +1129,33 @@ var ChTitle$ := ChanTitle$(ChanToChk%);
     return 1;
 
 end
+
+'CHECK CHANNEL LIST "BEFORE" SEQUENCER EDIT AND SWITCH CHANNEL*************************************************************************
+Func ChkList_Seq%()
+
+
+    'Make a for loop starting from 1 to 100 (according to samplechaninfo up to 100).
+    'as soon as outp = 1 (so it is a waveform), GET the channel port/info of this (maybe not necassary because the value of the for loop 
+    'is the channel number. Use this channel number for the sequencer update. 
+    'if index == 100 then print the message.
+    var Outp%,ch_n%;
+
+    for ch_n% := 1 to 100 do 
+           'Check each "channel" to see whether at least one waveform/adc exists
+           Outp% := SampleChanInfo(ch_n%,0); 'ch_n% = channel number, 0 if it is ADC type or 1 to get its port. I need ADC because of checking the waveform type 
+           'PrintLog(Outp%);
+           'PrintLog("\n");
+           if Outp% = 1 then'4 = channel number, 0 if it is ADC type or 1 to get its port. I need ADC because to check waveform. 
+                'PrintLog("Channel number is:"); 
+                'PrintLog(ch_n%);
+                SwitchChannel%(ch_n%);
+                break;
+            endif;
+           'In case no waveform found maybe send a message
+           if ch_n% = 100 then
+                Message("No Wavefrom channel detected in the sampling configuration!\nPlease comment last part of the sequencer otherwise it crashes");
+           endif
+     next; 
+
+  return 1;
+end;
