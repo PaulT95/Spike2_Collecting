@@ -151,7 +151,7 @@ Proc DisplayButtons()
         ToolbarEnable(20, 0);
         ToolbarEnable(25, 0);
 
-    case mainVH% <= 0 then
+    case mainVH% >= 0 then
         ToolbarEnable(1, 0);
         ToolbarEnable(2, 1);
         ToolbarEnable(3, 1);
@@ -721,7 +721,7 @@ end;
 'FUNCTION TO CHECK LAST XY view AND SETUP THE SEQUENCER BEFORE SNIPPET************************
 Func SetUp_VarSeq%()
 
-var TickClk := 1 / (SampleSeqClock(1) / 1000); 'get running seq clock '100000;'SampleSeqClock(1); /1000 because in ms
+var TickClk := round(1 / (SampleSeqClock(1) / 1000)); 'get running seq clock '100000;'SampleSeqClock(1); /1000 because in ms
 'var TickClk := 100000;
 'Adjust stuff '
 docase
@@ -743,7 +743,9 @@ case samplekey$ = "STIM2" then 'Message("No sequencer created yet, baustelle!");
     'Convert back from Plot to DAC16 in Voltage' y axis value = (16-bit value)*scale/6553.6 + offset
     var ChScale := ChanScale(StimP_set[0]);
     var ChOffset := ChanOffset(StimP_set[0]);
-    var Threshold := round( (ChScale*0.005)* 6553.6 );'Create a 0.5% scale hysterisys based on the scale'
+    'var Threshold := round( (ChScale*0.005)* 6553.6 );'Create a 0.5% scale hysterisys based on the scale'
+    var Threshold := 2; '2 Bit threshold?
+    var t := round(((StimP_set[1] - ChOffset) / ChScale) * 6553.6);
     'var Threshold := 2; '2bits Threshold? maybe more
     'round(1/6553.6), bit resolution * 1 because potential noise in the data, 6553.6 Each volt corresponds to approximately 6553.6 digital units.
     'Convert back to voltage for sequencer purpose --> Volt_Val = (Channel - offset) / scale;

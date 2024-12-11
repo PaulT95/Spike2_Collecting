@@ -245,7 +245,7 @@ END:        DELAY  V1              ;-3 because of MOV,MULI,JUMP
 
 ;;;;;;;;;;;;;;;;;;;
 ;STIM and a random rotation for checking Stim at a specific value pt
-;Keep it in mind that CHAN treats data as 16bits, so the level passed must be treated as well
+;Keep it in mind that CHAN treats data as 16bits, 2  ;Read data of Angle
 ;however you CANNOT use VDAC16 with a variable, that's why I convert that in the script first
 TESTPT: 'A DAC   1,3
          ;DIGOUT [....ii..] ;trigger rot
@@ -255,12 +255,12 @@ TESTPT: 'A DAC   1,3
          MOV     level, V22
          MOV     low, V23 ;copy converted voltage values BUT maybe directly pass values and use VDAC16?
          DIGOUT [....ii..] ;trigger rot
-BELOW:   CHAN    data, 4  ;Read data of LoadCell
+BELOW:   CHAN    data, 2  ;Read data of Angle
          BGT     data,low,below   ;wait for below     >wait below
-ABOVE:   CHAN    data, 4  ;Read data of LoadCell
+ABOVE:   CHAN    data, 2  ;Read data of Angle
          BLE     data,level,above ;wait for above     >wait above
 ;Solution from graphical sequencer which I like more, because with the other one I would need jumps I guess because the code is sequential
-;R00:        CHAN   data,4       >Wait chan 33 in 15 to 15.5
+;R00:        CHAN   data, 2  ;Read data of Angle
 ;            BGT    data,low,R00   >Wait chan 33 in 15 to 15.5
 ;            BLT    data,level,R00   >Wait chan 33 in 15 to 15.5
          DIGOUT  [.......1]       ;pulse output...
