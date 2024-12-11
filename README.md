@@ -2,6 +2,7 @@
 
 PATEC script is a Spike2 script for collecting and sampling data with a user-friendly interface implemented in Spike2.
 
+The script is quite flexible as it allows to create ramps as well as interact directly with the sequencer. I created and have used this script for helping lab members, students and myself to perform Biomechanics and Movement science experiments at the[NeuromecHahnics Lab](https://github.com/NeuromecHAHNics). 
 
 ## How it works
 
