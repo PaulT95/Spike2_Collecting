@@ -18,7 +18,7 @@
             DAC    1,0             ;DAC1 TTL for triggering whatever
             DAC    2,0             ;ultrasound --      > this is a TTL with duty cycle of 100Hz, var1
             DAC    3,0             ;DAC 3 set to zero -- > TTL for relay circuit, button switch <10us, var3
-            DIGOUT [....01..]      ;digital bits 2 and 3 control the isomed, initially one of them is set high to be able to simply invert them,
+            DIGOUT [....01..]      ;digital bits 2 and 3 control the isomed, initially one of them is set high to be able to simply invert them
 ;!!!!! A WARNING should be send to the user before running the sequencer / the script that is calling it !!!!!
             HALT
 
@@ -27,7 +27,7 @@
 ISOMED: 'I  DIGOUT [....ii..]      ;move Isomed
             HALT
 
-;QUIT AND PUT ALL BIT BACK TO 0
+;QUIT AND PUT ALL BITs BACK TO 0
 QUIT:   'Q DIGOUT [00000000]
            DAC 0, 0
            DAC 1, 0
@@ -36,7 +36,7 @@ QUIT:   'Q DIGOUT [00000000]
            HALT
 
 ;DEFINITIONS FOR TESTING PURPOSES APART FROM THE STUDY PROTOCOL
-;INFINITE ULTRASOUND DUTYCYCLE
+;INFINITE ULTRASOUND DUTY CYCLE @ 100Hz
 
 INFUS:  'U  DAC    2,4             ;INFINITE US
             DELAY  s(1/200)-4
@@ -244,21 +244,27 @@ END:        DELAY  V1              ;-3 because of MOV,MULI,JUMP
 
 
 ;;;;;;;;;;;;;;;;;;;
-;STIM and ONE ROTATION/ Stim at a specific time point
-
+;STIM and a random rotation for checking Stim at a specific value pt
+;Keep it in mind that CHAN treats data as 16bits, so the level passed must be treated as well
+;however you CANNOT use VDAC16 with a variable, that's why I convert that in the script first
 TESTPT: 'A DAC   1,3
          ;DIGOUT [....ii..] ;trigger rot
          VAR     V1,level ;level to cross
          VAR     V2,data          ;to hold the last data
-         VAR     V3,low   ;some sort of hysteresis level
+         VAR     V3,low           ;some sort of hysteresis level
          MOV     level, V22
-         MOV     low, V23 ;copy converted voltage values BUT maybe directly pass values and use VDAC16 
+         MOV     low, V23 ;copy converted voltage values BUT maybe directly pass values and use VDAC16?
          DIGOUT [....ii..] ;trigger rot
 BELOW:   CHAN    data, 4  ;Read data of LoadCell
          BGT     data,low,below   ;wait for below     >wait below
 ABOVE:   CHAN    data, 4  ;Read data of LoadCell
          BLE     data,level,above ;wait for above     >wait above
+;Solution from graphical sequencer which I like more, because with the other one I would need jumps I guess because the code is sequential
+;R00:        CHAN   data,4       >Wait chan 33 in 15 to 15.5
+;            BGT    data,low,R00   >Wait chan 33 in 15 to 15.5
+;            BLT    data,level,R00   >Wait chan 33 in 15 to 15.5
          DIGOUT  [.......1]       ;pulse output...
-         DIGOUT  [.......0];...wait for below
+         DELAY ms(1)-1
+         DIGOUT  [.......0];, below ;...wait for below
          DAC 1,0
-         HALT                     ; next task...
+         HALT   

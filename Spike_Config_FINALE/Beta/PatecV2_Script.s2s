@@ -256,7 +256,7 @@ Func New%()
     'SampleSequencer("C:\\users\\crossover\\Documents\\Spike2_Collecting-main\\Spike_Config_FINALE\\Beta\\fs_sequencer_adaptable.pls");
 
     Message("WARNING! DISABLE ISOMED TRIGGER! Depending on the selected program rotation might occur.");
-    ChkList_Seq%(); 'Run the function to update the CHAN in the sequencer file and avoid crash. 
+    ChkList_Seq%(); 'Run the function to update the CHAN in the sequencer file and avoid crash.
     mainVH% := FileNew(0, 1);    'creates a new sampling data file / time view
     WindowVisible(3);    'maximises window
     FrontView(mainVH%); 'unnecessary line?
@@ -743,10 +743,13 @@ case samplekey$ = "STIM2" then 'Message("No sequencer created yet, baustelle!");
     'Convert back from Plot to DAC16 in Voltage' y axis value = (16-bit value)*scale/6553.6 + offset
     var ChScale := ChanScale(StimP_set[0]);
     var ChOffset := ChanOffset(StimP_set[0]);
-    var Threshold := 0.00016*2; 'round(1/6553.6), bit resolution * 2 because potential noise in the data
+    var Threshold := round( (ChScale*0.005)* 6553.6 );'Create a 0.5% scale hysterisys based on the scale'
+    'var Threshold := 2; '2bits Threshold? maybe more
+    'round(1/6553.6), bit resolution * 1 because potential noise in the data, 6553.6 Each volt corresponds to approximately 6553.6 digital units.
     'Convert back to voltage for sequencer purpose --> Volt_Val = (Channel - offset) / scale;
-    SampleSeqVar(22,( (StimP_set[1] - ChOffset) / ChScale) - Threshold );
-    SampleSeqVar(23,( (StimP_set[1] - ChOffset) / ChScale) + Threshold );
+    ' Convert back to 16-bit digital values for sequencer purpose --> Digital_Val = (Channel - offset) / scale * 6553.6;
+    SampleSeqVar(22, round(((StimP_set[1] - ChOffset) / ChScale) * 6553.6) - Threshold);
+    SampleSeqVar(23, round(((StimP_set[1] - ChOffset) / ChScale) * 6553.6) + Threshold);
 else 'default' with US sync frame line in @ 100Hz, for SSC var 11, 15 and 16 are MULI in the sequencer, so no worries, it works for SSC too.
   SampleSeqVar(10,xywidth*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
   SampleSeqVar(11,(TP_Isomed[0]*100)-2); '-2 otherwise there is a shift of ~120ms due to a duty cycle for triggering the US
@@ -1135,18 +1138,18 @@ Func ChkList_Seq%()
 
 
     'Make a for loop starting from 1 to 100 (according to samplechaninfo up to 100).
-    'as soon as outp = 1 (so it is a waveform), GET the channel port/info of this (maybe not necassary because the value of the for loop 
-    'is the channel number. Use this channel number for the sequencer update. 
+    'as soon as outp = 1 (so it is a waveform), GET the channel port/info of this (maybe not necassary because the value of the for loop
+    'is the channel number. Use this channel number for the sequencer update.
     'if index == 100 then print the message.
     var Outp%,ch_n%;
 
-    for ch_n% := 1 to 100 do 
+    for ch_n% := 1 to 100 do
            'Check each "channel" to see whether at least one waveform/adc exists
-           Outp% := SampleChanInfo(ch_n%,0); 'ch_n% = channel number, 0 if it is ADC type or 1 to get its port. I need ADC because of checking the waveform type 
+           Outp% := SampleChanInfo(ch_n%,0); 'ch_n% = channel number, 0 if it is ADC type or 1 to get its port. I need ADC because of checking the waveform type
            'PrintLog(Outp%);
            'PrintLog("\n");
-           if Outp% = 1 then'4 = channel number, 0 if it is ADC type or 1 to get its port. I need ADC because to check waveform. 
-                'PrintLog("Channel number is:"); 
+           if Outp% = 1 then'4 = channel number, 0 if it is ADC type or 1 to get its port. I need ADC because to check waveform.
+                'PrintLog("Channel number is:");
                 'PrintLog(ch_n%);
                 SwitchChannel%(ch_n%);
                 break;
@@ -1155,7 +1158,7 @@ Func ChkList_Seq%()
            if ch_n% = 100 then
                 Message("No Wavefrom channel detected in the sampling configuration!\nPlease comment last part of the sequencer otherwise it crashes");
            endif
-     next; 
+     next;
 
   return 1;
 end;
