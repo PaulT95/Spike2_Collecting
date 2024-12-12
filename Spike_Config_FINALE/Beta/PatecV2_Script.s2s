@@ -667,9 +667,9 @@ Func SetEquipment%()
         case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 1 and savetrue% = 1 and StimP% = 0 then samplekey$ := "M"; 'US through the cmd window, TTL DAC1 for whatever
         case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 1 and savetrue% = 1 and StimP% = 0 then samplekey$ := "N"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
         'TO DO: Stim at specific value
-        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "STIM2"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
-        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "STIM2"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
-        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "STIM2"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "A"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "TO Define A"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "HARD TO DEFIN"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
 
         else samplekey$ := "n"; Message("No sequener instruction found");    'just instructs the sequencer to HOLD
     endcase;
@@ -739,17 +739,23 @@ case samplekey$ = "M" or samplekey$ = "N" then 'NOT USING SAMPLE KEY because if 
 
 case samplekey$ = "STIM2" then 'Message("No sequencer created yet, baustelle!");
 
+    'For stimulation with one rotation'
+    SampleSeqVar(10,xywidth*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
+    SampleSeqVar(14,((xywidth-TP_Isomed[0])*100));
+    'Can I use DBNZ with -3 or two loops inside? ALSO I must count the ticks inside actually
+    'I have to, otherwise if e.g. I have a rotation and I want a subejct to reach a torque for a stimulation
+    'If no level is reached, then the sequencer will be stuck inside waiting for the loop BUT
+    'DOES it matter?? Because in the idle once I time = xywidth * reps, it stops, maybe send new Seq instruction?
+    'However I do not like that, because additional points in  the keyboard channel'
     SwitchChannel%(StimP_set[0]); 'Update sequencer instructions with the desired channel
     'Convert back from Plot to DAC16 in Voltage' y axis value = (16-bit value)*scale/6553.6 + offset
     var ChScale := ChanScale(StimP_set[0]);
     var ChOffset := ChanOffset(StimP_set[0]);
-    'var Threshold := round( (ChScale*0.005)* 6553.6 );'Create a 0.5% scale hysterisys based on the scale'
-    var Threshold := 2; '2 Bit threshold?
-    var t := round(((StimP_set[1] - ChOffset) / ChScale) * 6553.6);
-    'var Threshold := 2; '2bits Threshold? maybe more
+    var Threshold := round( 6553.6 .* 0.001 );'Create a 0.1% error hysterisys based on the scale', 7 bits, so 1mV error....for our application fine
+    'var Threshold := 3; '3 Bit error threshold is enough? I'd say yet, but people might change
     'round(1/6553.6), bit resolution * 1 because potential noise in the data, 6553.6 Each volt corresponds to approximately 6553.6 digital units.
     'Convert back to voltage for sequencer purpose --> Volt_Val = (Channel - offset) / scale;
-    ' Convert back to 16-bit digital values for sequencer purpose --> Digital_Val = (Channel - offset) / scale * 6553.6;
+    'Convert back to 16-bit digital values for sequencer purpose --> Digital_Val = (Channel - offset) / scale * 6553.6;
     SampleSeqVar(22, round(((StimP_set[1] - ChOffset) / ChScale) * 6553.6) - Threshold);
     SampleSeqVar(23, round(((StimP_set[1] - ChOffset) / ChScale) * 6553.6) + Threshold);
 else 'default' with US sync frame line in @ 100Hz, for SSC var 11, 15 and 16 are MULI in the sequencer, so no worries, it works for SSC too.
@@ -1100,7 +1106,7 @@ var ChTitle$ := SampleTitle$(ChanToChk%); 'Use this because I check via config f
     var seq% := FileOpen(SampleSequencer$(),2,0); 'open the running/selected sequencer
     'View(seq%);'Jump to the previously created sequencer/text view'
     if (seq% > 0) then     ' if we opened a file...
-                    ReadSetup("\n"); 'check the format of the file!!!
+                    ReadSetup("\n"); 'line by line, hopefully no one fuck up the format
                     var line$; 'later add two for because I initiliaze or adjust array based on the length of the sequencer
                     MoveTo(0,0); 'Move to file start
 
@@ -1137,7 +1143,6 @@ end
 
 'CHECK CHANNEL LIST "BEFORE" SEQUENCER EDIT AND SWITCH CHANNEL*************************************************************************
 Func ChkList_Seq%()
-
 
     'Make a for loop starting from 1 to 100 (according to samplechaninfo up to 100).
     'as soon as outp = 1 (so it is a waveform), GET the channel port/info of this (maybe not necassary because the value of the for loop

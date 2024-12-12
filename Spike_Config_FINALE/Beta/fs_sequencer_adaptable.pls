@@ -55,7 +55,7 @@ OISOMED: 'S DAC    1,3             ;TTL from DAC1
             DELAY  V1             ;move only Isomed after time defined in the script
             DIGOUT [....ii..]      ;First rotation
             MOV    V1,V15,-3       ;-3 because of current instruction + the next ones is 3 ticks
-            MULI    V1,1000
+            MULI   V1,1000
             DELAY  V1
             DIGOUT [....ii..]      ;Second rotation
             MOV    V1,V16,-3       ;-3 because of current instruction + the next ones is 3 ticks
@@ -259,12 +259,13 @@ BELOW:   CHAN    data, 2  ;Read data of Angle
          BGT     data,low,below   ;wait for below     >wait below
 ABOVE:   CHAN    data, 2  ;Read data of Angle
          BLE     data,level,above ;wait for above     >wait above
-;Solution from graphical sequencer which I like more, because with the other one I would need jumps I guess because the code is sequential
-;R00:        CHAN   data, 2  ;Read data of Angle
-;            BGT    data,low,R00   >Wait chan 33 in 15 to 15.5
-;            BLT    data,level,R00   >Wait chan 33 in 15 to 15.5
+
          DIGOUT  [.......1]       ;pulse output...
          DELAY ms(1)-1
          DIGOUT  [.......0];, below ;...wait for below
          DAC 1,0
-         HALT   
+         HALT
+;Solution from graphical sequencer which I like more, because with the other one I would need jumps I guess because the code is sequential
+;R00:        CHAN   data, 2  ;Read data of Angle
+;            BGT    data,low,R00   >Wait chan 33 in 15 to 15.5
+;            BLT    data,level,R00   >Wait chan 33 in 15 to 15.5
