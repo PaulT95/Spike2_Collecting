@@ -3,7 +3,7 @@
 The PATEC script is a user-friendly Spike2 script designed for collecting and sampling data efficiently. This tool provides a customizable interface for diverse lab settings, making data acquisition straightforward and flexible.
 
 ## Overview
-The primary functions and operational details of this script are described in the [ReadMe Word file](www.linktothefile.com) file. The script allows for real-time updates to the sequencer, enabling users to create specific TTL or DutyCycle signals to trigger devices as needed. Depending on your goals, the sequencer can adapt in real time with a fixed setup.
+The primary functions and operational details of this script are described in the [ReadMe Word file](https://github.com/PaulT95/Spike2_Collecting/blob/main/Spike_Config_FINALE/Extra/Patec_ReadMe.docx) file. The script allows for real-time updates to the sequencer, enabling users to create specific TTL or DutyCycle signals to trigger devices as needed. Depending on your goals, the sequencer can adapt in real time with a fixed setup.
 
 ### Features
 1. **Ramps and Traces with Real-Time Visual Feedback**:
