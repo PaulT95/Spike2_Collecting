@@ -7,7 +7,6 @@ The primary functions and operational details of this script are described in th
 
 ### Main features
 1. **Ramps and Traces with Real-Time Visual Feedback**:
-**:
    - Users can create or import linear ramp directly in Spike2
    - Select a channel from the Sampling configuration for live feedback plotting.
    - Import non-linear or custom traces to plot and import from `.txt` files (formatted as two columns: X for time, and Y for the ramp/trace array). Examples available in MATLAB/Python for generating sinewave ramps are in the extra folder.
