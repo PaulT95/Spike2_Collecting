@@ -5,7 +5,7 @@ The PATEC script is a user-friendly Spike2 script designed for collecting and sa
 ## Overview
 The primary functions and operational details of this script are described in the [ReadMe Word file](https://github.com/PaulT95/Spike2_Collecting/blob/main/Spike_Config_FINALE/Extra/Patec_ReadMe.docx) file. The script allows for real-time updates to the sequencer, enabling users to create specific TTL or DutyCycle signals to trigger devices as needed. Depending on your goals, the sequencer can adapt in real time with a fixed setup.
 
-### Features
+### Main features
 1. **Ramps and Traces with Real-Time Visual Feedback**:
 **:
    - Users can create or import linear ramp directly in Spike2
@@ -17,6 +17,8 @@ The primary functions and operational details of this script are described in th
 2. **Snippet Functionality**:
    - Lunch the visual live feedback, while the sequencer does the hard work in the back ground. Extract then the data within a user-defined XY range (default: 15s) set in the XY-ramp settings.
    - The snippet exports all **RAW** channels as a `.MAT` file, capturing data from Cursor(0) to Cursor(0) + (X range * n repetition) + 1s. This includes one second before and after the defined range to ensure comprehensive data collection.
+
+Further details and explanation are provided in the readme file.
 
 ### Sequencer Details
 The sequencer dynamically updates based on changes made in the "XY Rep / Seq Config" settings, eliminating the need for manual reprogramming. This:
