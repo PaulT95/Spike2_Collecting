@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<CEDResources App="Spike2" AppVer="1012">
+	<DocTime>
+		<Templates>
+			<TempOffline>
+				<Ch7 id="7" NumTmpl="0" NumPts="28" NumTrace="1" TrigOff="8" Int="0.004999999999999999" PropIn="0.6" RemDC="0" IgnoreO="1" TrackNum="64" AmpErr="0.32000732421875" Decay="50" TimeC="9" Flags="8" YTop="32767" CWPre="10" CWPts="32">
+					<e YSc="0.030517578125" TrLow="-16000" TrHi="16000" LimLow="-32768" LimHi="32767" />
+				</Ch7>
+				<Ch5 id="5" NumTmpl="0" NumPts="28" NumTrace="1" TrigOff="8" Int="0.001" PropIn="0.6" RemDC="0" IgnoreO="1" TrackNum="64" AmpErr="0.32000732421875" Decay="50" TimeC="9" Flags="8" YTop="32767" CWPre="10" CWPts="32">
+					<e TrLow="-16000" TrHi="16000" LimLow="-32768" LimHi="32767" />
+				</Ch5>
+				<Ch2 id="2" NumTmpl="0" NumPts="28" NumTrace="1" TrigOff="8" Int="0.001" PropIn="0.6" RemDC="0" IgnoreO="1" TrackNum="64" AmpErr="0.32000732421875" Decay="50" TimeC="9" Flags="8" YTop="32767" CWPre="10" CWPts="32">
+					<e TrLow="-16000" TrHi="16000" LimLow="-32768" LimHi="32767" />
+				</Ch2>
+			</TempOffline>
+			<TempOnline>
+				<Ch5 id="5" NumTmpl="0" NumPts="28" NumTrace="1" TrigOff="8" Int="0.001" PropIn="0.6" RemDC="0" IgnoreO="1" TrackNum="64" AmpErr="0.32000732421875" Decay="50" TimeC="9" Flags="8" YTop="32767" CWPre="10" CWPts="32">
+					<e TrLow="-16000" TrHi="16000" LimLow="-32768" LimHi="32767" />
+				</Ch5>
+				<Ch2 id="2" NumTmpl="0" NumPts="28" NumTrace="1" TrigOff="8" Int="0.001" PropIn="0.6" RemDC="0" IgnoreO="1" TrackNum="64" AmpErr="0.32000732421875" Decay="50" TimeC="9" Flags="8" YTop="32767" CWPre="10" CWPts="32">
+					<e TrLow="-16000" TrHi="16000" LimLow="-32768" LimHi="32767" />
+				</Ch2>
+			</TempOnline>
+		</Templates>
+		<VirtChan Title="Virtual" Expr="Ch(2)" />
+		<ChanProc Chan="0" Count="2">
+			<p Type="-1" Args="0" />
+			<p Type="1" Args="1">
+				<a Ty="1" D="0.004999999999999999" />
+			</p>
+		</ChanProc>
+		<ChanProc Chan="1" Count="2">
+			<p Type="-1" Args="0" />
+			<p Type="1" Args="1">
+				<a Ty="1" D="0.004999999999999999" />
+			</p>
+		</ChanProc>
+		<ChanProc Chan="700,v1" Count="5">
+			<p Type="-1" Args="0" />
+			<p Type="3" Args="1">
+				<a Ty="1" D="0.003" />
+			</p>
+			<p Type="1" Args="1">
+				<a Ty="1" D="0.1" />
+			</p>
+			<p Type="3" Args="1">
+				<a Ty="1" D="0.003" />
+			</p>
+			<p Type="1" Args="1">
+				<a Ty="1" D="0.1" />
+			</p>
+		</ChanProc>
+		<View InfBkCR="0">
+			<WPlace flags="2" showc="3" minx="-1" miny="-1" maxx="-8" maxy="-31" t="156" b="692" l="156" r="1816" />
+			<Font hgt="-11" hthou="-115" wgt="400" paf="16" fnam="Times New Roman" />
+			<Chan Chan="700,v1" DMode="11" DWidth="-1e-06" DDSize="-1" Vis="0" AxMin="-202.209144664946" AxMax="190.20487016950335" AdcAxMin="-202.209144664946" AdcAxMax="190.20487016950335" FreqAxMax="500" AxType="1" ChType="9" BackOv="0" />
+			<Chan Chan="30" DMode="9" DWidth="-1e-06" DTrig="65535" DBoth="1" DHLine="1" Vis="0" Ax="0" AdcAxMax="1" FreqAxMax="2" AxType="1" ChType="5" BackOv="0" />
+			<Chan Chan="17" DMode="10" DWidth="-1e-06" DTrig="65535" DBoth="1" DHLine="1" Vis="0" Ax="0" AdcAxMax="1" FreqAxMax="4000" AxType="1" ChType="3" BackOv="0" />
+			<Chan Chan="16" DMode="10" DWidth="-1e-06" DTrig="65535" DBoth="1" DHLine="1" Vis="0" Ax="0" AdcAxMax="1" FreqAxMax="4000" AxType="1" ChType="3" BackOv="0" />
+			<Chan Chan="6" DMode="11" DWidth="-1e-06" DDSize="-1" Vis="0" AxMin="-5" AxMax="5" AdcAxMin="-5" AdcAxMax="5" FreqAxMax="1000" AxType="1" ChType="1" BackOv="0" />
+			<Chan Chan="5" DMode="11" DWidth="-1e-06" DDSize="-1" Vis="0" AxMin="-5" AxMax="5" AdcAxMin="-5" AdcAxMax="5" FreqAxMax="1000" AxType="1" ChType="1" BackOv="0" />
+			<Chan Chan="3" DMode="11" DWidth="-1e-06" DDSize="-1" Vis="0" AxMin="-787.5400000000004" AxMax="2296.6600000000003" AdcAxMin="-787.5400000000004" AdcAxMax="2296.6600000000003" FreqAxMax="1000" AxType="1" ChType="1" BackOv="0" />
+			<Chan Chan="2" DMode="11" DWidth="-1e-06" DDSize="-1" Vis="0" AxMin="-5" AxMax="5" AdcAxMin="-5" AdcAxMax="5" FreqAxMax="1000" AxType="1" ChType="1" BackOv="0" />
+			<Chan Chan="1" DMode="11" DWidth="-1e-06" DDSize="-1" AxMin="-11.506210306274582" AxMax="36.655224592675914" AdcAxMin="-11.506210306274582" AdcAxMax="36.655224592675914" FreqAxMax="1000" AxType="1" ChType="1" BackOv="0" />
+			<Chan Chan="0" DMode="11" DWidth="-1e-06" DDSize="-1" Vis="0" AxMin="-39.36767578125" AxMax="55.2978515625" AdcAxMin="-39.36767578125" AdcAxMax="55.2978515625" FreqAxMax="1000" AxType="1" ChType="1" BackOv="0" />
+			<XInfo Left="1267.364555534254" Right="1271.0246684051804" XAxSmall="5" CRBack="0" C0Vis="1" VCLabMode="2" HCLabMode="1" VCCount="5" HCCount="2">
+				<VCur id="0" Pos="1569.5099989999999" OldPos="1494.0779989999999" LabMode="2" LabPos="0.2" Num="0" AMode="14" />
+				<ActC id="0" Chan="30" End="MaxTime()" Ref="" VDep="536870913" LastV="0" Recalc="0" />
+				<VCur id="1" Pos="1267.5005281333383" OldPos="1267.504101758524" LabMode="2" LabPos="0.21680216802168023" Num="1" />
+				<VCur id="2" Pos="1570.5219989999998" OldPos="1570.5099989999999" LabMode="2" LabPos="0.5013550135501356" Num="2" AMode="16" />
+				<ActC id="2" Start="Cursor(0)+1" End="MaxTime()" Ref="" VDep="603979777" LastV="0" Recalc="0" />
+				<VCur id="3" Pos="1585.585999" OldPos="1584.5099989999999" LabMode="2" LabPos="0.2154471544715447" Num="3" AMode="16" />
+				<ActC id="3" Start="Cursor(0)+15" End="MaxTime()" Ref="" VDep="603979777" LastV="0" Recalc="0" />
+				<VCur id="4" Pos="1271.9429043024584" OldPos="1271.903863098502" LabMode="2" LabPos="0.2791327913279133" Num="4" />
+				<HCur id="0" Pos="35.305206298828125" OldPos="35.33499526977539" LabMode="1" LabPos="0.4508733624454148" Num="1" Chan="1" AMode="4" />
+				<HCur id="1" Pos="-77.03559875488281" OldPos="-70.12979125976562" LabMode="1" LabPos="0.2259825327510917" Num="2" Chan="700,v1" AMode="5" />
+				<ActHC id="1" Start="1570.5219989999998" End="1585.585999" Expr="0.0" Factor="0" VDep="67108864" Recalc="0" />
+				<ActHC id="2" Start="1570.5219989999998" End="1585.585999" Expr="0.0" Factor="0" VDep="67108864" Recalc="0" />
+			</XInfo>
+			<ChOrder Chans="10">
+				<c id="0" Chan="700,v1" />
+				<c id="1" Chan="30" />
+				<c id="2" Chan="17" />
+				<c id="3" Chan="16" />
+				<c id="4" Chan="6" />
+				<c id="5" Chan="5" />
+				<c id="6" Chan="3" />
+				<c id="7" Chan="2" />
+				<c id="8" Chan="1" />
+				<c id="9" />
+			</ChOrder>
+			<CursVals />
+			<CursRegs t="523" b="660" l="630" r="1198" Mode="8" />
+			<OvDraw3d YProp="0.5" XScale="0.5" YScale="0.5" />
+		</View>
+	</DocTime>
+	<Sample S2Ver="1012" ARange="5" Last="D:\Paolo\Spike_Config\Samplig_Config.s2cx">
+		<!--Sampling configuration saved to D:\Paolo\Spike_Config\Samplig_Config.s2cx on Wednesday, 28 September 2022 15:24:48-->
+		<Chans IdealWMRate="1000">
+			<Chan id="0" Type="1" Title="Torque" Rate="2000" ActRate="2000" Units="Nm" Scale="200" Divide="10" AType="1" />
+			<Chan id="1" Type="1" Title="Angle" Port="1" Rate="2000" ActRate="2000" Units="Deg" Scale="100" Divide="10" />
+			<Chan id="2" Type="1" Title="EMG_TA" Port="2" Traces="1" Rate="2000" ActRate="2000" Units="V" Divide="10" />
+			<Chan id="3" Type="1" Title="LoadCell" Port="7" Traces="1" Rate="2000" ActRate="2000" Units="Nm" Scale="-311.16" Offs="759.76" Divide="10" />
+			<Chan id="5" Type="1" Title="DAC1_Myo" Port="11" Traces="1" Rate="2000" ActRate="2000" Units="V" Divide="10" />
+			<Chan id="6" Type="1" Title="DAC3_Blo" Port="12" Traces="1" Rate="2000" ActRate="2000" Units="V" Divide="10" />
+			<Chan id="16" Type="3" Title="US" Traces="1" Rate="2000" ActRate="100" Units=" Volt" Divide="0" />
+			<Chan id="17" Type="3" Title="Myon" Port="1" Traces="1" Rate="2000" ActRate="100" Units=" Volt" Divide="0" />
+			<Chan id="30" Type="5" Title="Keyboard" ActRate="100" Comment="No comment" Units=" Volt" Divide="0" />
+		</Chans>
+		<Resol uspt="1" tpa="50" recalc="0" Assume1401="9" OptMeth="1" OptUSFrom="2" OptUSTo="50" GrpRates="1" />
+		<Mode For="60" EveryUn="1">
+			<Trigs id="0" Chan="-4" Code="-1" Post="1" Chans="-1" />
+			<Trigs id="1" Chan="-4" Code="-1" Post="1" Chans="-1" />
+			<Trigs id="2" Chan="-4" Code="-1" Post="1" Chans="-1" />
+			<Trigs id="3" Chan="-4" Code="-1" Post="1" Chans="-1" />
+		</Mode>
+		<Seq OutType="3" SeqFile="D:\Paolo\Spike_Config\fs_sequencer.pls" DacMask="8" DacUnits="V">
+			<Pulses States="27">
+				<State id="1">
+					<PulseList id="0">
+						<Pulse id="0" Type="0" Before="0.1" />
+					</PulseList>
+					<PulseList id="1">
+						<Pulse id="0" Type="0" Before="0.1" />
+					</PulseList>
+					<PulseList id="2">
+						<Pulse id="0" Type="0" Before="0.1" />
+					</PulseList>
+					<PulseList id="3">
+						<Pulse id="0" Type="0" Name="t" Before="0" />
+						<Pulse id="1" Type="7" Name="t" Before="0.010000000474974513" Length="0.010000000474974513" Amp="9.5" NumPul="750" Gap="0.010000000474974513" />
+					</PulseList>
+					<PulseList id="4">
+						<Pulse id="0" Type="0" Before="0.1" />
+					</PulseList>
+					<PulseList id="5">
+						<Pulse id="0" Type="0" Before="0.1" />
+					</PulseList>
+					<PulseList id="6">
+						<Pulse id="0" Type="0" Before="0.1" />
+					</PulseList>
+					<PulseList id="7">
+						<Pulse id="0" Type="0" Before="0.1" />
+					</PulseList>
+					<PulseList id="8">
+						<Pulse id="0" Type="0" Before="0.1" />
+					</PulseList>
+					<PulseList id="9">
+						<Pulse id="0" Type="0" Name="t" Before="0" Frame="16.00000075995922" />
+					</PulseList>
+				</State>
+			</Pulses>
+		</Seq>
+		<Waves />
+		<Auto />
+		<CondPorts Count="36">
+			<c id="0" Scale="0.030517578125" Units="Nm" Source="2" />
+			<c id="1" Scale="0.0152587890625" Units="Deg" Source="2" />
+			<c id="2" Units="V" Source="2" />
+			<c id="3" Units="V" Source="2" />
+			<c id="4" Units="V" Mode="2" Source="5" LFilt="500" HFilt="20" />
+			<c id="5" Units="V" Gain="1000" Source="5" HFilt="20" />
+			<c id="6" Scale="0.13611765578389168" Units="m/s^2" Source="2" />
+			<c id="7" Scale="-0.047479248046875006" Offset="754.56" Units="Nm" Source="2" />
+			<c id="8" Units="" Source="2" />
+			<c id="9" Units="Deg" Source="2" />
+			<c id="10" Scale="0.748291015625" Offset="-6149" Units="m/s^2" Source="2" />
+			<c id="11" Units="V" Source="2" />
+			<c id="12" Units="V" Source="2" />
+			<c id="13" Units="V" Source="2" />
+			<c id="14" Source="2" />
+			<c id="15" Units="TTL" Source="2" />
+			<c id="16" Source="2" />
+			<c id="17" Source="2" />
+			<c id="18" Source="2" />
+			<c id="19" Source="2" />
+			<c id="20" Source="2" />
+			<c id="21" Source="2" />
+			<c id="22" Source="2" />
+			<c id="23" Source="2" />
+			<c id="24" Source="2" />
+			<c id="25" Source="2" />
+			<c id="26" Source="2" />
+			<c id="27" Source="2" />
+			<c id="28" Source="2" />
+			<c id="29" Source="2" />
+			<c id="30" Source="2" />
+			<c id="31" Source="2" />
+			<c id="32" Scale="0.0152587890625" />
+			<c id="35" Scale="0.0152587890625" />
+			<c id="39" Scale="0.030517578125" Source="2" />
+			<c id="46" Scale="0.002288818359375" />
+		</CondPorts>
+		<ForceOP />
+		<Talkers />
+		<SampCtl t="103" b="0" l="-2" r="2" />
+		<SeqCtl t="133" b="0" l="-2" r="2" />
+		<SampSta t="163" b="0" l="-2" r="2" />
+		<PortLabels DACCount="0" DIGCount="0" />
+		<Script />
+	</Sample>
+	<App>
+		<WPlace flags="2" showc="3" minx="-1" miny="-1" maxx="-1" maxy="-1" t="0" b="1034" l="0" r="960" />
+	</App>
+</CEDResources>
