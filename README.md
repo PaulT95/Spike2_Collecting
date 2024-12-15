@@ -31,7 +31,8 @@ When repeating cycles, the XY view resets to 0 at the beginning of each cycle, a
 For Telemed ultrasound video saving in `.tvd` format, you can use the accompanying executable console script. Refer to the [Save TVD](https://github.com/PaulT95/Save_TVD_exe) library for details. Additionally, commands to control EchoWave via Spike2 buttons can be implemented using the [EchoWave CMD](https://github.com/PaulT95/EchoWave_cmd) library.
 
 ## Trigger box - Dynamometer
-Who is in the field of Biomechanics like me, likely they use a dynamometer. For trigger the rotation of the device's lever arm, I designed a triggering box controlled via Spike2 and two digital bits via the sequencer file. Specifically, this box was made up for the [Isomed2000](http://www.isomed2000.de/prod.im.intro.php?lc=de_il)
+Who is in the field of Biomechanics like me, likely they use a dynamometer. For trigger the rotation of the device's lever arm, I designed a triggering box controlled via Spike2 and two digital bits via the sequencer file. Specifically, this box was made up for the [Isomed2000](http://www.isomed2000.de/prod.im.intro.php?lc=de_il), but I would be happy to help in case of updating docs for any other device you use in the lab. 
+
 ## Acknowledgments
 Special thanks to my first German office mate, **[Tobi Weingarten](https://github.com/vinjardin)** 🍇, for invaluable assistance!
 
