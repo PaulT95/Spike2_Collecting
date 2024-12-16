@@ -43,6 +43,6 @@ If you use this script, please credit it as follows:
 Thank you for choosing this library. Happy data collection and coding! 😄
 
 ## Example: Real-Time Visual Torque Feedback
-Below is an example of real-time torque feedback on a linear ramp using GAME MODE. The dashed lines indicate the start and end points of the dynamometer rotation, triggered by DIGOUT set up automatically in the sequencer.
+Below is an example of real-time torque feedback on a linear ramp using GAME MODE. The first dashed line indicates the start of the dynamometer rotation, triggered by DIGOUT set up automatically in the sequencer.
 
 ![GIF_Ramp](https://user-images.githubusercontent.com/73119114/177746110-d5c6240d-1af0-44d8-83c9-f5e2dd74e2d0.gif)
