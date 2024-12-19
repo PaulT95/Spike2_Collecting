@@ -139,6 +139,15 @@ ULTRAMH:    DAC    2,4
             DAC    1,0             ;report dac 1 to zero
             HALT
 
+;;;;;;;;;TAP DAC for LONG recording SYNC (e.g., HDEMG)
+;1ms square wave pulse for syncing devices in long recording
+;it is useful for fatiguing contraction where we export the spike file afterwards
+;as we do not know for how long a contraction can protract
+TAPT: 'T  DAC 1,3
+          DELAY ms(1)-1
+          DAC 1,0
+          HALT
+
 ;STIMULATION PART: WE USE THE DIGITAL BIT 0(ZERO) IN THE FRONT PANEL OF THE 1401
 
 ;STIM AND NO rotation

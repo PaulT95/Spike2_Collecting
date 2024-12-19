@@ -115,6 +115,7 @@ Proc DoToolbar()
     ToolbarSet(10, "Equipment Options", SetEquipment%);
     ToolbarSet(11, "Analysis Options",SetAnalysisOpts%);
     ToolbarSet(9, "Snippet", Snippet%);
+    ToolbarSet(8, "DAC1 TAP", DAC1tap%);
 
     'ToolbarSet(7, "DAC3 ON", DAC3ON%);
     ToolbarSet(7, "Un/Freeze US", TapUS%);
@@ -1202,3 +1203,10 @@ Func ChkList_Seq%()
 
   return 1;
 end;
+
+'QUICK 1ms TAP for afterwards exporting (e.g., fatigue contraction)*************************************************************************
+
+Func DAC1tap%()
+  SampleKey("T");    '1ms single pulse square wave DAC1
+  return 1;
+end
