@@ -67,6 +67,7 @@ var listAnalysis$[7] := {"Nothing","Peak2Peak","Area","Mean","Max","Min","SD"};
 var which% := 0;
 'NameFile variable for prompt and send the command to SaveEco.exe and saving automatically the US data and the mat file
 var  NameFiles$;
+var mat_ch_proc[21][1][2]; 'init the global 3D matrix and then resize & reset values inisde the function. Used for saving channel processes
 
 'var to store file imported (txt) for designed a personalized ramp
 var fh%;
@@ -860,8 +861,10 @@ Func WriteFileName%()
             Message("Type a name! \nYou can't leave it blank!");
         else
             'if save goes well it returns zero otherwise it returns other codes < 0
-            ChanProcessClear(-1); 'remove all the operations from the channels to export raw data
+            'ChanProcessClear(-1); 'remove all the operations from the channels to export raw data
+            BackupChProcess%(); 'Backup and clear all processes from all NON virtual channel before exporting
             shitCheck% := FileSaveAs(ItemText$ + ".mat", 100, 0, "", 0,expFlags$); 'Export (string args)
+            ReApplyProc%(); 'Re-applying NON virtual channel processes with their given values
 
             'if you tick Ultrasound then Run The script.EXE for saving the TVD file automatically with the Path and File Name
              if uscheck% = 1 and shitCheck% = 0 then
@@ -1189,7 +1192,7 @@ Func ChkList_Seq%()
            Outp% := SampleChanInfo(ch_n%,0); 'ch_n% = channel number, 0 if it is ADC type or 1 to get its port. I need ADC because of checking the waveform type
            'PrintLog(Outp%);
            'PrintLog("\n");
-           if Outp% = 1 then'4 = channel number, 0 if it is ADC type or 1 to get its port. I need ADC because to check waveform.
+           if Outp% = 1 then'4 = channel number, 0 if it is ADC type or 1 to get its port. I need ADC to check waveform.
                 'PrintLog("Channel number is:");
                 'PrintLog(ch_n%);
                 SwitchChannel%(ch_n%);
@@ -1209,4 +1212,80 @@ end;
 Func DAC1tap%()
   SampleKey("T");    '1ms single pulse square wave DAC1
   return 1;
+end
+
+
+''''''''''''' GET each process and value of each non virtual channel in the 3D matrix
+''TO NOTE: It doesn't work when processes ask for 2 arguments (i.e., interpolation)
+Func BackupChProcess%()
+
+    'Init
+    var list%[101];'nCh% := -1;'first element = to n channels
+    ChanList(list%, 0x200000); 'copy all except for the virtuals
+    var tmp% := 1;
+
+    resize mat_ch_proc[][list%[0]][]; 'resize as many non virtual channels as in the time view
+    ArrConst(mat_ch_proc[][][], 0);'reset EVERYTHING to ZEROs
+    ArrSub(mat_ch_proc [1:20] [] [0],1); 'set all potential processes to -1 because process id = 0 is rectify, so I need an ID that is unique for identifying the end of applied process of a given ch
+
+    var n_arg%;
+    while tmp% <= 100 do
+
+      if list%[tmp%] = 0 then 'if there is no more channel, then quit the while loop
+          break
+      else
+        'list_cor%[tmp%-1] := list%[tmp%];
+        'ChanProcessClear(list%[tmp%],0);
+        mat_ch_proc[0][tmp%-1] [0] := list%[tmp%]; 'save the channel number in the first col and n line
+        mat_ch_proc[0][tmp%-1] [1] := list%[tmp%]; 'save the channel number in the first col and n line
+
+        'mat_val[0][tmp%-1] := list%[tmp%]; 'save the channel number in the first col and n line
+
+        n_arg% := ChanProcessInfo(list%[tmp%]); 'return how many processes are added to the given channel
+        'the first added process is one
+        var i% := 1; 'first argument starts from 1
+
+        'go through each channel argument and save the id of the process AND the value of it in the two matrixes
+        for i% := 1 to n_arg% step 1 do
+
+            'get id of the process
+            mat_ch_proc[i%][tmp%-1] [0]:= ChanProcessInfo(list%[tmp%],i%); 'this return the process id number
+
+            'get value of that id process at argument 1, I assume you can only have 1 argument/n for each process???!
+            mat_ch_proc[i%][tmp%-1] [1] := ChanProcessArg(list%[tmp%],i%,1);
+         next
+
+        ChanProcessClear(list%[tmp%],0); 'remove all the operations from the current ch after saving its processes
+        tmp% := tmp%+1;
+
+      endif
+
+    wend
+    'return updated 3D matrix for reverse coding following saving
+    return 1
+end
+
+''''''''''' REVERSE : Applying back the processes to the channels
+Func ReApplyProc%()
+
+    'get how many channels are collected
+    var tmp% := Len(mat_ch_proc,1)-1;
+    var i% := 1, j% := 1, n_ch%, id% , value;
+    'For each channel, get the processes id and value, respectively'
+    for i% := 0 to tmp% step 1 do 'as many steps as many channels
+        n_ch% := mat_ch_proc [0][i%][0];'first position is the channel number
+        '0 = channel number, from 1 the potential '
+        for j% := 1 to 20 step 1 do 'as I assumed maximum 20 processes can be applied
+
+            if mat_ch_proc[j%][i%][0] = -1 then 'if no process added at this channel (i.e., = -1), skip
+                break;
+            else
+                id% := mat_ch_proc[j%][i%][0]; 'get id of the process
+                value := mat_ch_proc[j%][i%][1]; 'get value of the process
+                ChanProcessAdd(n_ch%,id%,value);
+            endif
+        next
+    next
+
+   return 1
 end
