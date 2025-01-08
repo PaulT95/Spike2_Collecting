@@ -32,6 +32,9 @@ For Telemed ultrasound video saving in `.tvd` format, you can use the accompanyi
 ## Trigger box - Dynamometer
 Who is in the field of Neuromechanics and movement science like me, likely they use a dynamometer. For trigger the rotation of the device's lever arm, I designed a triggering box controlled via Spike2 and two digital bits via the sequencer file. Specifically, this box was made up for the [Isomed2000](http://www.isomed2000.de/prod.im.intro.php?lc=de_il), but I would be happy to help in case of updating docs for any other device you use in the lab. 
 
+## Extra
+Inside the Fusshalter model folder, you can the STL model to 3D print. They were designed to adapt to the footplate adapter of the dynamometer, in order to generate a rigid part for dorsiflexion contractions.
+
 ## Acknowledgments
 Special thanks to my first German office mate, **[Tobi Weingarten](https://github.com/vinjardin)** 🍇, for invaluable assistance!
 
