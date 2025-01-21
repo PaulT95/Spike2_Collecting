@@ -254,7 +254,7 @@ END:        DELAY  V1              ;-3 because of MOV,MULI,JUMP
 
 ;;;;;;;;;;;;;;;;;;;
 ;STIM and a random rotation for checking Stim at a specific value pt
-;Keep it in mind that CHAN treats data as 16bits, 1  ;Read data of Chan %c
+;Keep it in mind that CHAN treats data as 16bits, 1  ;Read data of Torque
 ;however you CANNOT use VDAC16 with a variable, that's why I convert that in the script first
 TESTPT: 'A DAC   1,3
          ;DIGOUT [....ii..] ;trigger rot
@@ -263,22 +263,35 @@ TESTPT: 'A DAC   1,3
          VAR     V3,low           ;some sort of hysteresis level
          MOV     level, V22
          MOV     low, V23         ;copy converted voltage values because I can't use VDAC16 with a variable
+         MOV     V4,V10,-6        ;copy X range var -6 ticks
+;         MOV     V5,V11,-7           ;Copy Time to triggering rotation
+;         MOV     V6,V14,-8        ;copy Time after rotation trigger to X range var -7 ticks
+         VAR     V99=4            ;empty var necessary for using SUB
+
+
+MATCH:   BLT    V4,3,XEND
+         SUB    V4,V99       ;'remove at each ticks
+         CHAN   data, 1  ;Read data of Torque
+         BGT    data,low,MATCH   ;
+         BLT    data,level,MATCH  ;
+         
          ;DIGOUT [....ii..] ;trigger rot
          ;Make a loop here based on the xywidth variable
-BELOW:   CHAN    data, 1  ;Read data of Chan %c
-         BGT     data,low,below   ;wait for below     >wait below
-ABOVE:   CHAN    data, 1  ;Read data of Chan %c
-         BLE     data,level,above ;wait for above     >wait above
-
+;BELOW:   CHAN    data, 1  ;Read data of Torque
+;         BGT     data,low,below   ;wait for below     >wait below
+;ABOVE:   CHAN    data, 1  ;Read data of Torque
+;         BLE     data,level,above ;wait for above     >wait above
+         ;send the pulse of 1ms
          DIGOUT  [.......1]       ;pulse output for 1ms
          DELAY ms(1)-1
          DIGOUT  [.......0]
-         DELAY s(1)-1   ;wait a sec before pulling down DAC1
-          ;end of the loop? yes it must be here
-         DAC 1,0
+         SUB V4,V99,-100 ;100 = 1ms
+         DELAY V4       ;wait till the end of the XY ramp  
+
+XEND:    DAC 1,0
          HALT
 ;Solution from graphical sequencer which I like more, because with the other one I would need jumps I guess because the code is sequential
 ;R00:        DBNZ Vx -3based on XY width?
-;            CHAN   data, 1  ;Read data of Chan %c
+;            CHAN   data, 1  ;Read data of Torque
 ;            BGT    data,low,R00   >Wait chan 33 in 15 to 15.5
 ;            BLT    data,level,R00   >Wait chan 33 in 15 to 15.5
