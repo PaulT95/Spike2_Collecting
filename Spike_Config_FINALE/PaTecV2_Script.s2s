@@ -701,6 +701,9 @@ Func Snippet%()
         'such that you can always refer to your event timestamp or TTL channels as common signal
         Yield(1);
 
+        CursorNew(MaxTime(),1);    'set the cursor1 already in the main view
+        Cursor(1,MaxTime());
+
         SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
         GetXYData%();   'sets startramp variable to current time so that biofeedback can be given
 
@@ -709,8 +712,6 @@ Func Snippet%()
           ProgRun("C:/Users/Biomech/Desktop/EchoWaveCMD.exe Run");    'Set the path of where you put the EXE file! Run in case of stimulation as the sequencer needs to be free
         endif
 
-        CursorNew(MaxTime(),1);    'set the cursor1 already in the main view
-        Cursor(1,MaxTime());
 
         if savetrue% = 1 then idlesave% := 1; endif;    'idle function checks for state of idlesave% variable
         if storecramp% = 1 then idlecramp% :=1; endif;     'idle function checks for state of idlecramp% variable
