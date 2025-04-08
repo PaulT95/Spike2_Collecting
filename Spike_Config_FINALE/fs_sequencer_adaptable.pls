@@ -13,6 +13,7 @@
             VAR    V20             ;;Delay to end of XY ramp from end of stimulation train
             VAR    V99
 ;I NEED ALL THEM BECAUSE I CAN'T DO CALCULATIONS IN THE LOOP AS WELL AS IT WILL TAKE TICKS!
+            VAR    V13=1000;             ;;correct to ticks calculation
 
             DAC    0,0             ;Stimulation cable
             DAC    1,0             ;DAC1 TTL for triggering whatever
@@ -50,16 +51,16 @@ INFUS:  'U  DAC    2,4             ;INFINITE US
 
 ;MOVE ISOMED TWICE FOR FAST Stretch-shortening/ Shortening Stretch cycle.
 OISOMED: 'S DAC    1,3             ;TTL from DAC1
-            MOV    V1,V11,-2       ; -2 because of this and the upcoming instruction till delay are 4 ticks
-            MULI   V1,1000         ;1000 because I am passing the values for the other cycles multiplied by 100
+            MOV    V1,V11       ; -2 because of this and the upcoming instruction till delay are 4 ticks         
+            MUL    V1,V13,-3         ;1000 because I am passing the values for the other cycles multiplied by 100. need to remove 3 ticks
             DELAY  V1             ;move only Isomed after time defined in the script
             DIGOUT [....ii..]      ;First rotation
-            MOV    V1,V15,-3       ;-3 because of current instruction + the next ones is 3 ticks
-            MULI   V1,1000
+            MOV    V1,V15       ;-3 because of current instruction + the next ones is 3 ticks
+            MUL    V1,V13,-3
             DELAY  V1
             DIGOUT [....ii..]      ;Second rotation
-            MOV    V1,V16,-3       ;-3 because of current instruction + the next ones is 3 ticks
-            MULI   V1,1000
+            MOV    V1,V16       ;-3 because of current instruction + the next ones is 3 ticks
+            MUL    V1,V13,-3
             DELAY  V16             ;3 steps caluclation of the ticks operations
             DAC    1,0
             HALT
@@ -295,3 +296,12 @@ XEND:    DAC 1,0
 ;            CHAN   data, 1  ;Read data of Torque
 ;            BGT    data,low,R00   >Wait chan 33 in 15 to 15.5
 ;            BLT    data,level,R00   >Wait chan 33 in 15 to 15.5
+
+
+
+SIT:      's DELAY s(32)
+             DIGOUT [00000001]      ;Turn on signal   (second stim)
+             DIGOUT [00000000]      ;Turn off signal
+             DELAY s(5)
+             DIGOUT [00000001]      ;Turn on signal   (second stim)
+             DIGOUT [00000000]      ;Turn off signal
