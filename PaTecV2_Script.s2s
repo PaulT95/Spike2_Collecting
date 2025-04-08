@@ -1,0 +1,1295 @@
+'Authors: Paolo Tecchio and Tobias Weingarten'
+
+'GLOBAL VARIABLE DECLARATIONS*****************************************************
+'View handles
+var mainVH% := 0; 'FileOpen("Y:\\Documents\\MATLAB\\PhD\\DATA\\TTM\\KJ\\Post\\L\\All.smrx",0, 3); '0
+var mvcVH%, xyVH%;
+var drawView%;                                              				'Result view for drawing ramp
+
+'XY-View channels and duration
+var lrampCH%, urampCH%, fdbckCH%;
+var repXYcycle% := 1; 'repetitive contractions on XY view
+var allXY%;
+var n% := 1; 'var for IDLE for checking how many contraction'
+'Channel duplication / calculations
+'var totalfdbckCH%, VLrmsCH%, VMrmsCH%, RFrmsCH%;
+'VARS to pass to the SEQUENCER '
+var TP_Isomed[2] := {4, 10};
+var Stim_Set[3] := {5,6,50}; 'beginning, end, frequency of the stimulation
+var n_Stim% := 50;
+var StimP_set[5] := {1,5,0,0,0};
+
+'Temporary trash variables for multiple functions
+var x%, throaway%;
+var startramp := -100;    'so that maxtime is always greater than startramp unless changed by GetXYData()
+
+'XY-Ramp setting initialisation
+var xywidth := 15;
+var fdbkdata% := 1;    'the channel data that should be given to biofeedback
+var fdbkoffset := 0;    'delay of biofeedbackchannel, usually used when moving average filters are applied
+var allowedoffset := 0.1;    'allowed offset for biofeedback e.g. 0.05 = 5%
+var genxy[16] :=    {0, 0, 3, 0, 5, 1, 8, 1, 10, 0.7, 12, 0.5, 15, 0, 17, 0};    'general ramp that will be given to xy view, taken from r1 or r2
+var r1[16] :=       {0, 0, 3, 0, 5, 1, 8, 1, 10, 0.7, 12, 0.5, 15, 0, 17, 0};    'ramp memory vector with 16 elements alternating time and corresponding value
+var r2[16] :=       {0, 0, 3, 0, 5, 10, 8, 1, 10, 0.7, 12, 0.5, 15, 0, 17, 0};
+
+var rampmax := Max(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);    'for ramp range offset and for x and y range
+var rampmin := Min(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);
+var range := rampmax * allowedoffset;
+var game_mode% := 0;
+
+'Curve feedback ramp
+var storecramp% := 0;
+var idlecramp%;
+var genlcramp[30000], genucramp[30000];
+var r3x[30000];
+var i;
+for i := 1 to 30000 do
+    r3x[i-1] := i / 2000    'initialize x-axis with 15 seconds (2000 Hz)
+next;
+var r3y[30000][5];
+var sc% := 0;    'selected column of matrix which will be stored to during idle
+var dc[5];     'display column for biofeedback
+var factor := 1;
+
+var rampnumber%;    'to distinguish between ramp1, ramp2 and so on (currently only two ramps, ramp 3 as curve ramp, ramp 4 import array, ramp5 MVC, ramp6 hand draw)
+
+'View options
+var mv%, xyv%; ' mvcv%; MVC are now integrated in the xy view
+var winwidth% := 70;
+
+'Equipment Check variables
+var uscheck%, DAC1_TTL% := 1, tappercheck%, motioncapcheck%, isomedcheck%, isomedcheck2%, shorttap%, savetrue% := 1,  Stim%, StimP%;
+var samplekey$ := "n"; 'select samplekey based on selected variables from above for the sequencer
+var idlesave% := 0;
+
+'Analysis options '
+var listAnalysis$[7] := {"Nothing","Peak2Peak","Area","Mean","Max","Min","SD"};
+var which% := 0;
+'NameFile variable for prompt and send the command to SaveEco.exe and saving automatically the US data and the mat file
+var  NameFiles$;
+var mat_ch_proc[21][1][2]; 'init the global 3D matrix and then resize & reset values inisde the function. Used for saving channel processes
+
+'var to store file imported (txt) for designed a personalized ramp
+var fh%;
+var storeImp[30000]; 'variable temp for storing data ramp display of ramp2(from snippet)
+var Import_rampX[1], Import_rampY[1], Import_rampY_scale[1]; 'just one element as it will resize based on the points imported from the TXT to plot
+'variable for drawing vertical dashed line'
+var vline[2] := {0, 0};
+var vertLine%, vertLine2%;
+
+'VARS FOR MAKING A FANCY MVC XY WINDOW
+var checkMVC% := 0;
+var minMVC := 0;
+var maxMVC := 0;
+var llrampCH%, uurampCH%; 'just XY chan for MVC in the two directions'
+
+'******************************************************'Draw ramp based on waveplay window and then plot it in the XY
+var pWaveInt;                                           				'Sample interval (1/rate)
+var pWaveRate := 200;                                  				    'Points resolution for drawing
+var pWavePts%;                                          				'Number of data points
+var oldX%;                                              				'Previous mouse position (for interpolation)
+var oldY;
+var outMax := 5;														'DAC full scale value
+var outZero := 0;                                                       'DAC zero value
+var TraceToPlot[1];                                                     'initialize to 1 and then resize according to the length
+'THE SCRIPT STARTS HERE BY CHECKING THE SPIKE VERSION AND INITIALIZING TOOLBAR
+'SET FILE PATH AND CREATE TOOLBAR**************************************************
+if App(-1)<1001 then Message("This script needs at least Spike2 version 10.01"); halt endif;	'Checks for the latest version of Spike2
+FilePathSet("", 0, "Where do you want to save everything?");
+
+DoToolbar();
+
+'CREATE THE TOOLBAR****************************************************************
+Proc DoToolbar()
+    ToolbarClear();
+    ToolbarSet(0, "", Idle%);
+    'ToolbarSet(27,"Seq_write", SwitchChannel%);
+    ToolbarSet(25,"Draw Trace",MakeWave%);
+    ToolbarSet(22, "Start Sampling", New%);
+    ToolbarSet(20, "Change View", ChangeView%);
+    ToolbarSet(19, "Rep XY/Seq Config", RepXY%);
+    ToolbarSet(18, "XY-Ramp", XYRampSettings%);
+    'ToolbarSet(15, "Get XY-Data", GetXYData%);
+
+    ToolbarSet(13, "MVC Opts", setMVC%);
+
+    ToolbarSet(10, "Equipment Options", SetEquipment%);
+    ToolbarSet(11, "Analysis Options",SetAnalysisOpts%);
+    ToolbarSet(9, "Snippet", Snippet%);
+    ToolbarSet(8, "DAC1 TAP", DAC1tap%);
+
+    'ToolbarSet(7, "DAC3 ON", DAC3ON%);
+    ToolbarSet(7, "Un/Freeze US", TapUS%);
+    ToolbarSet(6, "Start US", USStart%);
+    ToolbarSet(5, "Move IsoMed", Isomed%);
+
+    ToolbarSet(3, "StopSampling", StopSampling%);
+    ToolbarSet(2, "SaveEverything", SaveData%);
+    ToolbarSet(-1, "Quit");
+    DisplayButtons();
+    Toolbar("Collect some awesome data!!!",231);
+end;
+
+
+'DISABLE OR ENABLE TOOLBAR BUTTONS*************************************************
+Proc DisplayButtons()
+    docase
+    case mainVH% <= 0 then
+        ToolbarEnable(1, 0);
+        ToolbarEnable(2, 0);
+        ToolbarEnable(3, 0);
+        ToolbarEnable(5, 0);
+        ToolbarEnable(6, 0);
+        ToolbarEnable(7, 0);
+        ToolbarEnable(8, 0);
+        ToolbarEnable(9,  0);
+        ToolbarEnable(10, 0);
+        ToolbarEnable(11, 0);
+        ToolbarEnable(13, 0);
+        'ToolbarEnable(15, 0);
+        ToolbarEnable(18, 0);
+        ToolbarEnable(19, 0);
+        ToolbarEnable(20, 0);
+        ToolbarEnable(25, 0);
+
+    case mainVH% >= 0 then
+        ToolbarEnable(1, 0);
+        ToolbarEnable(2, 1);
+        ToolbarEnable(3, 1);
+        ToolbarEnable(5, 1);
+        ToolbarEnable(6, 1);
+        ToolbarEnable(7, 1);
+        ToolbarEnable(8, 1);
+        ToolbarEnable(9, 1);
+        ToolbarEnable(10, 1);
+        ToolbarEnable(11, 1);
+        ToolbarEnable(13, 1);
+        'ToolbarEnable(15, 1);
+        ToolbarEnable(18, 1);
+        ToolbarEnable(19, 1);
+        ToolbarEnable(20, 1);
+        ToolbarEnable(22, 0);
+        ToolbarEnable(25, 1);
+
+    endcase;
+end;
+
+
+'IDLE FUNCTION*********************************************************************
+var relativetime, lastdata;    'global variables but specific to IDLE, not inside idle to not repeatedly being created
+var resetT; 'global var to calculate the relative time related to the XY view
+
+Func Idle%()
+    View(mainVH%);    'select main view so that maxtime can be read in the following if-condition
+    if MaxTime() < startramp + allXY% and mainVH% > 0 then    'startramp is the maximum time at ramp initialisation <-- GetXYData()
+        relativetime := MaxTime() - startramp;
+        lastdata := ChanValue(fdbkdata%, MaxTime()-fdbkoffset);
+        resetT := relativetime -(n%-1)*xywidth;
+        View(xyVH%);
+        if xyVH% > 0 then
+          if (game_mode% = 1) then XRange(resetT -1, resetT +2); endif'Moving win in XY for following trace on X with Y  fixed
+          XYAddData(fdbckCH%, resetT, lastdata);
+        endif;  'draw the x value as relative time to be able to have static ramps
+      if ((relativetime/xywidth) >= n%) then 'if repetitive, re-Send the sequencer instruct'
+        SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
+        View(xyVH%); XYDelete(fdbckCH%); 'Solution to remove data form xy view for repetitive cycle'
+        n% := n% + 1; 'Potentially delete old point in the XY if becomes too slow'
+      endif
+        return 1;
+    endif;
+
+    if idlesave% = 1 and MaxTime() > (startramp + allXY%) then 'i need idle save other wise it will always enter here
+      FrontView(mainVH%); 'set mainVH just to be sure to be in the time view'
+      if samplekey$ = "M" or samplekey$ = "N" then
+          ProgRun("C:/Users/Biomech/Desktop/EchoWaveCMD.exe Freeze");    'Set the path of where you put the EXE file! Run in case of stimulation as the sequencer needs to be free
+      endif
+      CursorNew(MaxTime(),2);    ' cursor2 at max time
+      Cursor(2, MaxTime()); CursorVisible(3);
+
+      Yield(1);
+      ExportChanList(1);    'initialise the channel list
+      ExportChanList(Cursor(0), Cursor(0)+ (allXY%+2), -1); 'save from the time snippet was clicked to the length of the XY set (X-range*n_rep) + 2
+      WriteFileName%(); 'Func to save and also send the potential cmd to US exe app to save with same name
+      idlesave% := 0;
+      quickAnalysis%(which%); 'call the function to analyse between cursor 2 and 3 based on selection selected
+    endif
+
+    if idlecramp% = 1 and MaxTime() > startramp + xywidth then
+        ChanData(fdbkdata%, r3y[][sc%], Cursor(0)+1, Cursor(0)+xywidth);
+        idlecramp% := 0;
+        storecramp% := 0;
+        XYWindow%();    'update the xy-window
+    endif;
+
+    return 1;
+end;
+
+
+'CHANGES BETWEEN DIFFERENT VIEW OPTIONS********************************************
+Func ChangeView%()
+    DlgCreate("View options");
+    DlgLabel(1, "Select the front view and \nhow large it is supposed to be");
+    DlgCheck(2, "Main view");
+    DlgCheck(3, "XY View");
+    DlgInteger(4, "Window Size", 70, 110);
+    DlgShow(throaway%, mv%, xyv%, winwidth%);
+
+    if mv% + xyv% > 1 then Message("Select only one view to modify"); ChangeView%(); endif;
+
+    docase
+        case mv% and mainVH% > 0 then FrontView(mainVH%); WindowVisible(3);    'if mainview exists and is selected always just maximise
+        'in case of xy or mvc view put these on the lefthand side with the mainview on the right side
+        case xyv% and xyVH% > 0 then
+            View(mainVH%); Window(winwidth%, 0, 100, 100);
+            FrontView(xyVH%); Window(0, 0, winwidth%, 100);
+            if winwidth% = 100 then WindowVisible(3); endif;    'maximise if a 100%
+    endcase;
+
+    return 1;
+end;
+
+
+'START NEW SAMPLING WINDOW AND LOAD CORRESPONDING CONFIGURATIONS*******************
+Func New%()
+
+    FileOpen("",6,1,"Select Sampling config file"); 'open dialog to load sampling config file
+    SampleSequencer("D:/Paolo/Spike_final/fs_sequencer_adaptable.pls");     'sets sequencer file to use
+    'SampleSequencer("C:\\users\\crossover\\Documents\\Spike2_Collecting-main\\Spike_Config_FINALE\\Beta\\fs_sequencer_adaptable.pls");
+
+    Message("WARNING! DISABLE ISOMED TRIGGER! Depending on the selected program rotation might occur.");
+    ChkList_Seq%(); 'Run the function to update the CHAN in the sequencer file and avoid crash.
+    mainVH% := FileNew(0, 1);    'creates a new sampling data file / time view
+    WindowVisible(3);    'maximises window
+    FrontView(mainVH%); 'unnecessary line?
+
+    SampleStart(); 'After file FileNew for a new Time view based on the sampling config'
+    DisplayButtons();
+    return 1;
+end;
+
+
+'XY-RAMP SETTINGS DIALOG***********************************************************
+Func XYRampSettings%()
+    var mxywidth := 60;
+
+    DlgCreate("Settings for ramps with up to eight points");
+
+    'general settings
+    DlgChan(1, "Select feedback channel", 0x40000);
+    DlgReal(2, "Select X-Range Time", 0, mxywidth);     'probably there will be no cases where more than 60 seconds are needed
+    DlgReal(3, "Select allowed offset", 0.00, 0.15);
+    DlgList(4, "Select what to do", "Ramp 1|Ramp 2|Ramp 3|Import Array|MVC|Hand Draw");
+
+    'ramp appearance settings
+    var xp1% := 6;
+    DlgGroup("Simple Ramp", 1, 5, 60, 18);    'just adds a fancy grouping rectangle
+    DlgReal(5, "Timepoint 1", -1, mxywidth, 0, xp1%);    'there are certain cases when this is annoying and you need to close and open the dialog again
+    DlgReal(6, "Value 1", -1000, 1000, 0, xp1%+1);
+    DlgReal(7, "Timepoint 2", 0, mxywidth, 0, xp1%+2);
+    DlgReal(8, "Value 2", -1000, 1000, 0, xp1%+3);
+    DlgReal(9, "Timepoint 3", 0, mxywidth, 0, xp1%+4);
+    DlgReal(10, "Value 3", -1000, 1000, 0, xp1%+5);
+    DlgReal(11, "Timepoint 4", 0, mxywidth, 0, xp1%+6);
+    DlgReal(12, "Value 4", -1000, 1000, 0, xp1%+7);
+    DlgReal(13, "Timepoint 5", 0, mxywidth, 0, xp1%+8);
+    DlgReal(14, "Value 5", -1000, 1000, 0, xp1%+9);
+    DlgReal(15, "Timepoint 6", 0, mxywidth, 0, xp1%+10);
+    DlgReal(16, "Value 6", -1000, 1000, 0, xp1%+11);
+    DlgReal(17, "Timepoint 7", 0, mxywidth, 0, xp1%+12);
+    DlgReal(18, "Value 7", -1000, 1000, 0, xp1%+13);
+    DlgReal(19, "Timepoint 8", 0, mxywidth, 0, xp1%+14);
+    DlgReal(20, "Value 8", -1000, 1000, 0, xp1%+15);
+    DlgReal(21, "Offset for RMS", 0, 2, 0, xp1%+16);
+
+    DlgGroup("Curve Ramp", 1, 23, 60, 3);
+    DlgLabel(22, "Mean of ", 0, xp1%+18);
+    DlgCheck(23, "C0", 10, xp1%+18);
+    DlgCheck(24, "C1", 18, xp1%+18);
+    DlgCheck(25, "C2", 26, xp1%+18);
+    DlgCheck(26, "C3", 34, xp1%+18);
+    DlgCheck(27, "C4", 42, xp1%+18);
+    DlgReal(28, "Factor", -10, 10, 0, xp1%+19);
+
+    DlgGroup("Store data to array on next snippet", 1, 26, 60, 2.8);
+    DlgList(29, "Select array column", "C0|C1|C2|C3|C4", 100, 0, xp1%+21);
+    DlgCheck(30, "Arm for storing", 0, xp1%+21.75);
+
+    DlgGroup("Optional", 1, 29, 60, 4);
+    DlgReal(31, "Timepoint Vert line 1",0, mxywidth, 0, xp1%+24);
+    DlgReal(32, "Timepoint Vert line 2",0, mxywidth, 0, xp1%+25);
+
+    DlgCheck(33,"GAME-MODE --> (tick in case of multiple XY-cycles) ",0, xp1%+26);
+
+    DlgAllow(0x3ff, 0, ChangeXYSettingsDLG%);    'calls changexysettingsdlg function everytime a change in the xy-settings dialog was made
+
+    throaway% := DlgShow(fdbkdata%, xywidth, allowedoffset, rampnumber%,  genxy, fdbkoffset, throaway%, dc, factor, sc%, storecramp%, vline, game_mode%);
+    if throaway% > 0 then
+        XYWindow%();    'should add after in the function change xy setting dlg but item that change doesn´t make sense
+    endif
+    return 1;
+end;
+
+'FUNCTION TO UPDATE XY-RAMP SETTINGS DIALOG DYNAMICALLY****************************
+Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
+
+    var temp[30000]; var tempY$; var throaway%;
+    docase
+        'updates the xy-view immediately by already specifying the new variable value and not waiting for DlgShow
+        case item% = 2 then xywidth := DlgValue(item%);
+        case item% = 3 then allowedoffset := DlgValue(item%);
+        case item% = 12 then XYWindow%();    'update the xy-window everytime
+
+        case item% = 4 then    'when different ramp selected then
+            rampnumber% := DlgValue(item%);
+
+            if rampnumber% = 3 then 'if select ramp3 import txt file and overwrite values in the temp array
+                fh% := FileOpen("*.txt",8,0,"Select Text file with the array"); 'open dialog to load txt file with ramp
+                if (fh% > 0) then     ' if we opened a file...
+
+                    ReadSetup("\n"); 'check the format of the file!!!
+                    var line$; 'later add two for because I initiliaze or adjust array based on the length of the txt
+
+                    var i% := 0;
+                    while Read(line$) >= 0 do 'read until the lines are finished
+                        'resize array until all the lines are read
+                        resize Import_rampX[i%+1]; resize Import_rampY[i%+1];
+                        throaway% := InStr(line$,","); 'position of the comma, use the throaway var
+                        tempY$ := Mid$(line$,throaway%+1); 'y is the second part, so read the char after the comma to end
+                        'Save values in x and y array to plot later
+                        Import_rampX[i%]:= Val(line$); 'by default it reads the first col to the comma which is x
+                        Import_rampY[i%]:= Val(tempY$); 'convert y string to a number
+
+                        i% := i% +1;   'move to the next line
+                    wend;
+                    'resize Import_rampY_scale[len(Import_rampY)]; 'resize the Import
+                    FileClose();                 ' we are done with the file
+                endif;
+
+            endif;
+
+            'Message("Values : %d", rampnumber%);
+            if rampnumber% = 0 then
+                for x% := 0 to len(genxy)-1 do
+                    DlgValue(x%+5, r1[x%]);    'set dialog fields to last entered value (or default) after changing from ramp to ramp
+                    genxy[x%] := r1[x%];
+                next;
+            endif;
+            if rampnumber% = 1 then
+                for x% := 0 to len(genxy)-1 do
+                    DlgValue(x%+5, r2[x%]);    'set dialog fields to last entered value (or default) after changing from ramp to ramp
+                    genxy[x%] := r2[x%];
+                next;
+            endif;
+
+            else    'when changes to the actual ramp were made then (except for when changing ramp 3)
+            if rampnumber% = 0 then
+                for x% := 0 to len(genxy)-1 do
+                        r1[x%] := DlgValue(x%+5);    'saves the value in placeholder for this specific ramp
+                        genxy[x%] := r1[x%];    'needed to update the xy-view immediately
+                next;
+            endif;
+            if rampnumber% = 1 then
+                for x% := 0 to len(genxy)-1 do
+                        r2[x%] := DlgValue(x%+5);    'saves the value in placeholder for this specific ramp
+                        genxy[x%] := r2[x%];    'needed to update the xy-view immediately
+                next;
+            endif;
+
+    endcase;
+
+    'update general xy appearance and +- feedback offset
+    if rampnumber% = 0 or rampnumber% = 1 then
+        DlgEnable(1, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
+        DlgEnable(0, 22, 23, 24, 25, 26, 27);
+        rampmax := Max(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);    'for ramp range offset and for x and y range, only every second value off array as these are the y values
+        rampmin := Min(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);
+        range := abs(rampmax * allowedoffset);    'feedback offset calculation
+        if (abs(rampmax) < abs(rampmin)) then range := rampmin * allowedoffset; endif 'correct offest in case of neg values
+    endif;
+
+    'RAMP 2
+    if rampnumber% = 2 then
+        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
+        DlgEnable(1, 22, 23, 24, 25, 26, 27);
+        sc% := DlgValue(29);
+        factor := DlgValue(28);
+
+        'var temp[30000];
+        for x% := 0 to len(dc)-1 do
+            dc[x%] := DlgValue(23+x%);
+            if dc[x%] = 1 then ArrAdd(temp, r3y[][x%]); endif;
+        next;
+        ArrDiv(temp, ArrSum(dc));
+        ArrMul(temp, factor);
+
+        rampmax := Max(temp); rampmax := temp[rampmax];
+        rampmin := Min(temp); rampmin := temp[rampmin];
+        range := abs(rampmax * allowedoffset);
+        if (abs(rampmax) < abs(rampmin)) then range := abs(rampmin * allowedoffset); endif 'correct offest in case of neg values
+
+        ArrConst(genlcramp, temp); ArrConst(genucramp, temp);
+        ArrAdd(genlcramp, range * -1);
+        ArrAdd(genucramp, range);
+
+    endif;
+ ' RAMP 3
+    if rampnumber% = 3 then 'plot data from the TXT imported.
+        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20);
+        DlgEnable(0, 22, 23, 24, 25, 26, 27);
+
+        'sc% := DlgValue(29);
+        factor := DlgValue(28);
+
+        resize Import_rampY_scale [len(Import_rampY)]; 'Resize as Import_rampY_scale is used for both RAMP 3 and RAMP 5
+        ArrConst(Import_rampY_scale,Import_rampY) ; 'create a scale Y array so the array multiplication doesn't affect the original one
+        ArrMul(Import_rampY_scale, factor); 'scale the y values in case you want to change the intensity, but remember you are changing the original file
+        'Calculate ranges
+        rampmax := Import_rampY_scale[Max(Import_rampY_scale)];
+        rampmin := Import_rampY_scale[Min(Import_rampY_scale)];
+        range := abs(rampmax * allowedoffset);
+        if (abs(rampmax) < abs(rampmin)) then range := abs(rampmin * allowedoffset); endif 'correct offest in case of neg values
+
+    endif
+    ' RAMP 4 (MVC)
+    if rampnumber% = 4 then
+        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23); 'Can't put more numbers in a single row
+        DlgEnable(0, 24, 25, 26, 27, 29, 30);
+        DlgEnable(1,28);
+        factor := DlgValue(28);
+    endif
+    'RAMP 5 (Hand draw)
+    if rampnumber% = 5 then
+        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20);
+        DlgEnable(0, 22, 23, 24, 25, 26, 27);
+
+        factor := DlgValue(28);
+        resize Import_rampY_scale [len(TraceToPlot)];
+        ArrConst(Import_rampY_scale,TraceToPlot) ; 'create a scale Y array so the array multiplication doesn't affect the original one
+        ArrMul(Import_rampY_scale, factor); 'scale the y values in case you want to change the intensity, but remember you are changing the original file
+        'Calculate ranges
+        rampmax := Import_rampY_scale[Max(Import_rampY_scale)];
+        rampmin := Import_rampY_scale[Min(Import_rampY_scale)];
+         range := abs(rampmax * allowedoffset); 'offset of calculation
+        if (abs(rampmax) < abs(rampmin)) then range := abs(rampmin * allowedoffset); endif 'correct offest in case of neg values
+
+    endif
+
+    XYWindow%();    'update the xy-window everytime
+    return 1;
+end;
+
+
+'OPEN THE XY VIEW FOR RAMP BIOFEEDBACK*********************************************
+Func XYWindow%()
+
+    if xyVH% <= 0 then
+        xyVH% := FileNew(12, 0); WindowVisible(3);    'creates the xy-view if it has not been created
+
+        'create channels for ramp and biofeedback as well as general settings for those
+        lrampCH% := XYSetChan(0, 0, 0, 1);    'new channel, no fixed number of data points, no sorting, join by line
+        urampCH% := XYSetChan(0, 0, 0, 1);
+        fdbckCH% := XYSetChan(0, 0, 0, 1);
+
+        XYDrawMode(lrampCH%, 2, 0);    '2: size of marker points --> invisible
+        XYDrawMode(urampCH%, 2, 0);
+        XYDrawMode(fdbckCH%, 2, 0);
+        XYDrawMode(lrampCH%, 4, 3);    '4: line thickness (0 - 10)
+        XYDrawMode(urampCH%, 4, 3);
+        XYDrawMode(fdbckCH%, 4, 3);
+
+        ChanColourSet(lrampCH%, 1, 0, 0.21, 0.38);    'RUB-blue
+        ChanColourSet(urampCH%, 1, 0, 0.21, 0.38);    'RUB-blue
+        ChanColourSet(fdbckCH%, 1, 0.55, 0.68, 0.06);    'RUB-green
+
+        XYDrawMode(-1, 5, 0);    'no auto scaling
+
+        'MVC line stuff
+        llrampCH% := XYSetChan(0, 0, 0, 1);    'new channel, no fixed number of data points, no sorting, join by line
+        uurampCH% := XYSetChan(0, 0, 0, 1);
+
+        XYDrawMode(llrampCH%, 2, 0);    '2: size of marker points --> invisible
+        XYDrawMode(uurampCH%, 2, 0);
+        XYDrawMode(llrampCH%, 4, 3);    '4: line thickness (0 - 10)
+        XYDrawMode(uurampCH%, 4, 3);
+
+        ChanColourSet(llrampCH%, 1, 0, 0.21, 0.38);    'RUB-blue
+        ChanColourSet(uurampCH%, 1, 0, 0.21, 0.38);    'RUB-blue
+
+        'Vertical lines
+        vertLine% := XYSetChan(0, 0, 0, 1);    'new channel, no fixed number of data points, no sorting, join by line
+        XYDrawMode(vertLine%, 2, 0);    '2: size of marker points --> invisible
+        XYDrawMode(vertLine%, 3, 2);    '3: line style 1 --> dotted
+        XYDrawMode(vertLine%, 4, 1.8);    '4: line thickness (0 - 10)
+        ChanColourSet(vertLine%, 1, 0, 0.21, 0.38);    'RUB-blue
+
+        vertLine2% := XYSetChan(0, 0, 0, 1);    'new channel, no fixed number of data points, no sorting, join by line
+        XYDrawMode(vertLine2%, 2, 0);    '2: size of marker points --> invisible
+        XYDrawMode(vertLine2%, 3, 2);    '3: line style 1 --> dotted
+        XYDrawMode(vertLine2%, 4, 1.8);    '4: line thickness (0 - 10)
+        ChanColourSet(vertLine2%, 1, 0, 0.21, 0.38);    'RUB-blue
+
+    endif;
+    'set the view
+    FrontView(xyVH%);
+
+    XYDelete(lrampCH%);    'make sure previous data is deleted
+    XYDelete(urampCH%);
+    XYDelete(llrampCH%);
+    XYDelete(uurampCH%);
+    XYDelete(vertLine%);
+    XYDelete(vertLine2%);
+
+    'add the data for the ramps as defined in the settings / dialog box
+    if rampnumber% = 0 or rampnumber% = 1 then
+
+        for x% := 1 to len(genxy)/2 do
+            XYAddData(lrampCH%, genxy[x%*2-2], genxy[x%*2-1]-range);
+        next;
+        for x% := 1 to len(genxy)/2 do
+            XYAddData(urampCH%, genxy[x%*2-2], genxy[x%*2-1]+range);
+        next;
+
+    endif;
+
+    if rampnumber% = 2 then
+        XYAddData(lrampCH%, r3x, genlcramp);
+        XYAddData(urampCH%, r3x, genucramp);
+    endif;
+
+    if rampnumber% = 3 then
+        for x% := 0 to len(Import_rampX)-1 do
+            XYAddData(lrampCH%, Import_rampX[x%], Import_rampY_scale[x%]-range);
+            XYAddData(urampCH%, Import_rampX[x%], Import_rampY_scale[x%]+range);
+        next;
+    endif;
+
+    if rampnumber% = 5 then 'draw the boundiers of the drawn trace
+        for x% := 0 to len(Import_rampY_scale)-1 do
+            XYAddData(lrampCH%, x%/pWaveRate, Import_rampY_scale[x%]-range);
+            XYAddData(urampCH%, x%/pWaveRate, Import_rampY_scale[x%]+range);
+        next;
+    endif
+
+    'Correct YRange for theese ramps as they use rampmin and rampmax
+    'YRange(-1, (rampmin-range)*1.2, (rampmax+range)*1.2);    'min/max of all ramp values + 20% for nicer view
+
+
+    if rampnumber% = 4 then 'SET THE HORIZONTAL LINES LIMITS for MVC
+        'just two local vars to keep max and min'
+        'scale depending on the factor. Like you do 100% MVC and then you scale to 80%
+        var minMVCramp := minMVC * factor;
+        var maxMVCramp := maxMVC * factor;
+        range := maxMVCramp * allowedoffset; 'this for positive/max then do the same for negative
+        for x% := 0 to 15 do'Just plot for 15 sec
+            XYAddData(llrampCH%, x%, maxMVCramp - range);
+        next;
+        for x% := 0 to 15 do
+            XYAddData(uurampCH%, x%, maxMVCramp + range);
+        next;
+
+        range := minMVCramp * allowedoffset; 'do range for negative'
+        'Negative MVC --> if you have just one direction contraction you can either do Ch(1)*-1
+        for x% := 0 to 15 do
+            XYAddData(lrampCH%, x%, minMVCramp - range);
+        next;
+        for x% := 0 to 15 do
+            XYAddData(urampCH%, x%, minMVCramp + range);
+        next;
+        'YRange(-1, (minMVCramp)*1.2, maxMVCramp*1.2); 'min/max of all ramp values + 20 for nicer view
+
+    endif
+
+   'Optimise the y axis automatically, it saves lines of code and calculation. Fix the x axis to the xywidth to remind that snippet saving according to that
+    Optimise(-2); 'Visible channels
+    XRange(0,xywidth); 'Fix x axis
+
+    'VERTICAL LINE PLOT
+    'Plot after the Optimise, so it won't fuck it up
+    'just two hyphotetical values (I guess it's hard that someone reaches 1000 peak 2 peak)'
+    'if they are set to 0 do not add them, because it's annoying for the XY view axis
+    if (vLine[0] <> 0) then
+      XYAddData(vertLine%, vline[0], -500);
+      XYAddData(vertLine%, vline[0], 500);
+    endif
+    if (vLine[1] <> 0) then
+      XYAddData(vertLine2%, vline[1], -500);
+      XYAddData(vertLine2%, vline[1], 500);
+    endif
+
+   return 1;
+end;
+
+
+'FUNCTION TO DRAW RAMP, STANDING ALONE OR CALLED BY ANOTHER FUNCTION***************
+Func GetXYData%()
+    View(mainVH%);
+    startramp := MaxTime();    'will result in idle if-statement being true
+
+    if xyVH% > 0  then
+        View(xyVH%);
+        XYDelete(fdbckCH%);     'removes old biofeedback
+    endif;
+    return 1;
+end;
+
+
+'SELECT WHICH EQUIPMENT SHOULD BE ACTIVATED WHEN SAVING A SNIPPET******************
+Func SetEquipment%()
+
+    DlgCreate("Select Capture Equipment");
+    DlgLabel(1, "Devices that will be used / triggered during XY width duration snippet");
+    DlgCheck(2, "Save Snippet");
+    DlgCheck(3, "Ultrasound");
+    'DlgCheck(3, "Tendon Tapper");
+    'DlgCheck(4, "Motion Capture");
+    DlgCheck(4, "Isomed 1 Rot");
+    DlgCheck(5, "Isomed 2 Rot");
+    DlgCheck(6, "Short tap");
+    DlgCheck(7, "DAC 1 TTL 3V SQUARE WAVE(to triggering any external system)");
+    'DlgCheck(8, "DAC3"); 'To remove'
+    DlgCheck(8, "Stimulation");
+    DlgCheck(9, "Stimulation at specific value");
+    DlgLabel(10, "Note that not any/all combination are possible, please read the README. \nIsomed triggered after n sec, Ultrasound frame line at @100 Hz");
+    DlgLabel(11, "In case the Motion Capture needs a TTL, I suggest that you use DAC1. \nShort Tap not set here");
+    'DlgShow(throaway%, uscheck%, tappercheck%, motioncapcheck%, isomedcheck%, savetrue%, shorttap%, throaway%);
+    DlgShow(throaway%, savetrue%, uscheck%, isomedcheck%, isomedcheck2%, shorttap%, DAC1_TTL%, Stim%, StimP%, throaway%, throaway%);
+
+'Doesn't matter what people really use, just use less instruction for the same purpose.
+'DAC1_TTL it is always useful to have, then if people do not connect any cable, or don't use it, it doesn't matter.
+'E.g., I need 2 rotations but no Ultrasound, just tick US but it won't be opened in Echowave or whatsoever
+    docase
+        case uscheck% = 0 and DAC1_TTL% = 0 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 0  then samplekey$ := "P";  'only save snippet
+        case uscheck% = 0 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 and savetrue% = 1 and StimP% = 0  then samplekey$ := "S"; 'This is for special case that fast events occur (> 100Hz, limit of US sync)
+        'With US stuff for "slower things"
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 0 then  samplekey$ := "u";    'ultrasound only as XY WIDTH * rep but no rotations
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 0 then samplekey$ := "J"; 'US @100Hz, TTL DAC1 and a single rotation'
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 and savetrue% = 1 and StimP% = 0 then samplekey$ := "k"; 'US @100HZ, TTL DAC1 and two rotations'
+        'Stim part'
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 1 and savetrue% = 1 and StimP% = 0 then samplekey$ := "M"; 'US through the cmd window, TTL DAC1 for whatever
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 1 and savetrue% = 1 and StimP% = 0 then samplekey$ := "N"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        'TO DO: Stim at specific value
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 0 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "A"; 'US through the cmd window, TTL DAC1 for whatever and no rotation
+        case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 0 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "B"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+        'case uscheck% = 1 and DAC1_TTL% = 1 and isomedcheck% = 1 and isomedcheck2% = 1 and Stim% = 0 and savetrue% = 1 and StimP% = 1 then samplekey$ := "HARD TO DEFIN"; 'US through the cmd window, TTL DAC1 for whatever and isomed rotation
+
+        else samplekey$ := "n"; Message("No sequener instruction found");    'just instructs the sequencer to HOLD
+    endcase;
+
+    return 1;
+end;
+
+'FUNCTION TO TRIGGER EQUIPMENT, START BIOFEEDBACK AND SAVE SHORT SNIPPETS**********
+Func Snippet%()
+
+    if (samplekey$ = "n") then
+        Message("No equipment option selected");
+    else
+        allXY% := xywidth * repXYcycle%; 'calculate overall XY duration'
+        'prepare a cursor from which on the snippet can be saved
+        View(mainVH%);
+        n% := 1; 'reset number of contractions/XY performed'
+
+        Cursor(0, MaxTime());
+        CursorVisible(0,1);
+        CursorActive(0,14, 31, 0, "", "", 1);   'Data points --> keyboard. Make cursor 0 active to search keyboard
+        'easy to navigate everytime you snippet'
+
+        'Pass values to the sequencer variables'
+        SetUp_VarSeq%(); 'Firt snippet Send Vars to sequencer'
+
+        'you can't rely on the timing of the cursor positions for post-analysis, therefore save an extra second beforehand,
+        'such that you can always refer to your event timestamp or TTL channels as common signal
+        Yield(1);
+    
+        CursorNew(MaxTime(),1);    'set the cursor1 already in the main view
+        Cursor(1,MaxTime());
+        'CursorVisible(1,1);
+    
+        SampleKey(samplekey$);    'use sequencer based on sample key defined in SetEquipment%()
+        GetXYData%();   'sets startramp variable to current time so that biofeedback can be given
+
+        'this is a bit delay because of EchoWave it self'
+        if samplekey$ = "M" or samplekey$ = "N" then 'whatever instruction requires the sequecer to stimulate specifically or checking real time variable for stimulation then
+          ProgRun("C:/Users/Biomech/Desktop/EchoWaveCMD.exe Run");    'Set the path of where you put the EXE file! Run in case of stimulation as the sequencer needs to be free
+        endif
+    
+
+        if savetrue% = 1 then idlesave% := 1; endif;    'idle function checks for state of idlesave% variable
+        if storecramp% = 1 then idlecramp% :=1; endif;     'idle function checks for state of idlecramp% variable
+    endif
+    return 1;
+
+end;
+
+'FUNCTION TO CHECK LAST XY view AND SETUP THE SEQUENCER BEFORE SNIPPET************************
+Func SetUp_VarSeq%()
+
+var TickClk := round(1 / (SampleSeqClock(1) / 1000)); 'get running seq clock '100000;'SampleSeqClock(1); /1000 because in ms
+'var TickClk := 100000;
+'Adjust variables based on sequencer instruction '
+docase
+case samplekey$ = "M" or samplekey$ = "N" then 'NOT USING SAMPLE KEY because if I change the parameters in seq settings it does not change sample to STIM1 again
+
+
+ 'Isomed stuff '
+  SampleSeqVar(11,(TP_Isomed[0]*TickClk) ); 'If only ISOMED fix to 10us as it won´t be a loop but just a delay, -1 for the tick
+  SampleSeqVar(99, xywidth*TickClk);
+
+  SampleSeqVar(17, Stim_Set[0]*TickClk);
+  SampleSeqVar(18, Stim_Set[1]*TickClk);
+  SampleSeqVar(19, (1/Stim_Set[2]) * TickClk ); 'delta time for the delay in the seq loop
+  SampleSeqVar(20,  n_Stim%);' Stim_Set[3]); 'num of stimulation to send = repeating loop
+
+case samplekey$ = "A" or samplekey$ = "B" then 'Message("No sequencer created yet, baustelle!");
+
+    'For stimulation with one rotation'
+    SampleSeqVar(10,xywidth*TickClk); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
+    SampleSeqVar(11,(TP_Isomed[0]*TickClk) ); 'If only ISOMED fix to 10us as it won´t be a loop but just a delay, -1 for the tick
+    SampleSeqVar(14,((xywidth-TP_Isomed[0])*TickClk));   
+    
+    'Convert back from Plot to DAC16 in Voltage' y axis value = (16-bit value)*scale/6553.6 + offset
+    var ChScale := ChanScale(StimP_set[0]);
+    var ChOffset := ChanOffset(StimP_set[0]);
+    var Threshold := round( 6553.6 * 0.001 );'Create a 0.1% error hysterisys based on the scale', 7 bits, so 1mV error....for our application fine
+    'var Threshold := 3; '3 Bit error threshold is enough? I'd say yet, but people might change
+    'round(1/6553.6), bit resolution * 1 because potential noise in the data, 6553.6 Each volt corresponds to approximately 6553.6 digital units.
+    'Convert back to voltage for sequencer purpose --> Volt_Val = (Channel - offset) / scale;
+    'Convert back to 16-bit digital values for sequencer purpose --> Digital_Val = (Channel - offset) / scale * 6553.6;
+    SampleSeqVar(22, round(((StimP_set[1] - ChOffset) / ChScale) * 6553.6) - Threshold);
+    SampleSeqVar(23, round(((StimP_set[1] - ChOffset) / ChScale) * 6553.6) + Threshold);
+else 'default' with US sync frame line in @ 100Hz, for SSC var 11, 15 and 16 are MULI in the sequencer, so no worries, it works for SSC too.
+  SampleSeqVar(10,xywidth*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
+  SampleSeqVar(11,(TP_Isomed[0]*100)-1); '-1 otherwise there is a shift of ~120ms due to a duty cycle for triggering the US
+  SampleSeqVar(12,(TP_Isomed[1]*100)-1);
+  SampleSeqVar(14,((xywidth-TP_Isomed[0])*100));
+  SampleSeqVar(15,((TP_Isomed[1]-TP_Isomed[0])*100)-1);
+  SampleSeqVar(16,((xywidth-TP_Isomed[1])*100));
+
+  'Stimulation variables with no rotation
+  SampleSeqVar(17, Stim_Set[0]*TickClk);
+  SampleSeqVar(18, (1/Stim_Set[2]) * TickClk ); 'delta time for the delay in the seq loop
+  SampleSeqVar(19, n_Stim%);' Stim_Set[3]); 'num of stimulation to send = repeating loop
+  SampleSeqVar(20, (xywidth - Stim_Set[1]) * TickClk); 'delay to the end of the XY view
+
+ endcase
+  return 1;
+end
+
+'Function for opening Dialog and choose how many times to repeat the XY ramp view ***************************************************************************************
+Func RepXY%()
+
+    var oldCh% := StimP_set[0]; 'local var used for a single local scope
+    var oldVal := StimP_set[1]; 'local var used for a single local scope
+
+    DlgCreate("Repetitive XY & Sequencer Configuration");
+    DlgLabel(1,"If repetition of XY ramp > 1, please tick GAME-MODE in the XY-ramp");
+    DlgLabel(2,"CAUTION! The Snippet works based on the 'X-range Time' value and not on the last TimePoint value!");
+    DlgInteger(3,"Repetition of the XY view", 1, 100);    'there are certain cases when this is annoying and you need to close and open the dialog again
+
+    DlgGroup("IsoMed rotation settings",1,4,85,3);
+    DlgReal(5, "TimePoint IsoMed Rotation 1 (s)",1, xywidth);
+    DlgReal(6, "TimePoint IsoMed Rotation 2 (s)",1, xywidth);
+
+    DlgGroup("Stimulation settings", 1, 7, 85,5);
+    DlgReal(8, "Beginning Stimulation (s)", 0, xywidth-1);
+    DlgReal(9, "End Stimulation (s)", 0, xywidth);
+    DlgReal(10, "Frequency (Hz)", 0, 1000);
+    DlgLabel(11, "Number of stimulations: " + Str$(n_Stim%));
+    'Necessary to design the different sequencer instruction as torque might be the same at different position for example'
+    DlgGroup("Stimulation settings to stimulate at a specific value",1,12, 85, 6);
+    DlgChan(13, "Select the channel to check", 0x01); 'Show only waveforms as CHAN in the sequencer use BIT wise control
+    DlgReal(14, "Pulse (1ms) at value equal to:",-10000,10000);
+    DlgCheck(15,"Pulse before triggering first rotation");
+    DlgCheck(16,"Pulse during/after Isomed rotation 1");
+    DlgCheck(17,"Pulse during/after Isomed rotation 2");
+
+    DlgAllow(0x3ff, 0, UpdateNumStim%);    'calls it everytime a parameter change for updating the number of stims. This prevents potential issue
+
+    'Remember: thoraway is used because DlgGroup is a variable return as the Dlg starts one number after
+    'if DlgReal(1,xxx), DlgGroup(bla), DlgReal(3,xxx); then the element 2 is returned as whatsoever so put in throaway.
+    'it is used to make it easier to create the correct size of the dialog input
+    throaway% := DlgShow( throaway%, throaway%, repXYcycle%, throaway%, TP_Isomed, throaway%, Stim_Set, throaway%,throaway%, StimP_set);
+    'PrintLog(StimP_set[0]);
+    'If OK is pressed sort Isomed rotation and calculate new stimulation train and update the sequencer
+    if throaway% > 0 then
+        'SORT for the idiots that wanna try finding a bug
+        ArrSort(TP_Isomed);
+        n_Stim% := (Stim_Set[1] - Stim_Set[0]) * Stim_Set[2];'need to round for DBNZ in the sequencer
+        if StimP_set[0] <> oldCh% or StimP_set[1] <> oldVal then 
+            SwitchChannel%(StimP_set[0]); 'Update sequencer instructions with the desired channel ONLY if this changes, I am not a fan of re running a running sequencer
+        endif
+         'calculate and set variables to the sequencer
+        'Stim_Set[3] := n_Stim%; need to change DlgLabel 11 to dlgreal
+        'Should I create a threshold already 5% for Stim before being passed to the sequencer?'
+    endif
+    'SetUp_VarSeq%(); //not necessary as the variables will updates ONCE you click snippet, but the values to match are saved in the background
+    return 1;
+end
+
+'FUNCTION FOR UPDATING REAL-TIME NUMBER OF STIMULATION **************************************************************************
+Func UpdateNumStim%(item%)
+var v%;
+docase
+    case ((item% = 8) or (item% = 9) or (item% = 10)) then '0 is initial setup
+     v% := (DlgValue(9) - DlgValue(8)) * DlgValue(10);'need to round for DBNZ in the sequencer
+     DlgValue$(11,"Number of stimulations: " + Str$(v%));'Update value in the dialog
+endcase;
+return 1;                     'Return 1 to keep dialog running
+end;
+
+'DIALOG BOX FOR WRITE FILE NAME **************************************************************************
+'Dialog Box to set up the name for files and Return the NameFiles(global var)
+'it will concate it with the Path and send the instruct the cmd program made
+'for saving the ultrasound with the same path + filename
+Func WriteFileName%()
+
+  NameFiles$ := "";
+  ' variables for the Dialog
+  var butCancel% := 0, shitCheck% := 1;  'just a check '
+  var ItemText$:= "";
+  'need this shit otherwise error --> too loooooong argument
+  var expFlags$ := "UseSName=0|UseCName=1|WaveTimes=1|BinFreq=0|BinTimes=0|WaveData=2|MarkAs=1|TMarkAs=2|RMarkAs=2|RMarkData=2|WaveMarkAs=2|WaveMarkData=2|Compat=0|WaveAll=1|WaveSameN=0";
+
+    'Dialog box
+    while(ItemText$ = "" or shitCheck% = 1 ) do
+        DlgCreate("Type the file name (without ext)\nRaw data will be exported",0,0,100,5);
+        DlgString(2, "File Name (max 100 chars)",80,"",-6,1.5);    'String item with max 100char (you can change that)
+        DlgAllow(0x3ff, 0);     'Allow all, no idle, change function
+        butCancel% := DlgShow(throaway%,ItemText$);  '1 if ok is pressed, 0 if cancel is pressed
+
+        if (butCancel% = 0) then 'exit the dowhile loop
+            break;
+        endif
+
+        if (ItemText$ = "") then
+            Message("Type a name! \nYou can't leave it blank!");
+        else
+            'if save goes well it returns zero otherwise it returns other codes < 0
+            'ChanProcessClear(-1); 'remove all the operations from the channels to export raw data
+            BackupChProcess%(); 'Backup and clear all processes from all NON virtual channel before exporting
+            shitCheck% := FileSaveAs(ItemText$ + ".mat", 100, 0, "", 0,expFlags$); 'Export (string args)
+            ReApplyProc%(); 'Re-applying NON virtual channel processes with their given values
+
+            'if you tick Ultrasound then Run The script.EXE for saving the TVD file automatically with the Path and File Name
+             if uscheck% = 1 and shitCheck% = 0 then
+                 NameFiles$ := FilePath$() + ItemText$;
+                 ProgRun("C:/Users/Biomech/Desktop/SaveECO.exe " + NameFiles$);    'Set the path of where you put the EXE file!
+             endif;
+
+             if shitCheck% = 0  then break; endif; 'if you save/overwrite just break and return'
+             shitCheck% := 1; 'Must put back to 1 because if you don't save and want to change the name the loop restart
+        endif
+    wend
+
+    return 1;
+end;
+
+'START ULTRASOUND******************************************************************
+Func USStart%()
+    SampleSeqVar(1, 1);    'the sequener variable '1' controls ifinity ultrasound triggering, 1 for starting, anything else for breaking out
+    SampleKey("U");
+    ToolbarSet(6, "Stop US", USstop%);
+    return 1;
+end;
+
+'STOP ULTRASOUND******************************************************************
+Func USStop%()
+    SampleSeqVar(1, 0);    'the sequener variable '1' controls ifinity ultrasound triggering, 1 for starting, anything else for breaking out
+    ToolbarSet(6, "Start US", USstart%);
+    return 1;
+end;
+
+
+'MOVE ISOMED***********************************************************************
+Func Isomed%()
+    SampleKey("I");    'moves the isomed by sending a digital output to bit 2-3 on the back (10-11)
+    return 1;
+end;
+
+
+'STOP SAMPLING*********************************************************************
+Func StopSampling%()
+    var ret%;
+    ret% := Query("Are you sure you wish to stop sampling?");    'dialog box to say yes or no to stopping the sampling process
+    if ret% = 1 then
+        SampleKey("Q");    'put ALL BITs back to 0
+        FrontView(mainVH%);
+        SampleStop();
+    endif;
+    ToolbarEnable(22, 1);   'starting a new sampling process becomes available again
+    ToolbarEnable(1, 1);    'quitting the script becomes available, at least you can't accidentally close a window until then
+    return 1;
+end;
+
+
+'SAVE FILE*************************************************************************
+Func SaveData%()
+    FrontView(mainVH%);
+    FileSave();    'Saves sampled data file
+    return 1;
+end;
+
+'SELECT WHICH ANALYSIS SHOULD BE PERFORMED WHEN CLICKING SNIPPET******************
+Func SetAnalysisOpts%()
+
+    DlgCreate("Select analysis");
+    DlgLabel(1, "Select what analyse of the feedback channel: ");
+    DlgList(2, "Choose", listAnalysis$[]); 'Add the list to the dialog ok% := DlgShow(which%); 'Display dialog, wait for user
+    DlgShow(throaway%, which%);
+    quickAnalysis%(which%);
+
+    return 1;
+end;
+
+'FUNCTION TO SET MANUALLY MVC VALUES. MAYBE YOU CHANGE THE ROM/ANGLE **********
+Func setMVC%()
+
+    DlgCreate("Min & Max settings");
+    DlgLabel(1, "Set Max (positive) and Min (negative) MVC values \nRange limits are set on XYramp");
+    DlgReal(2, "Max", -1000, 1000);    'there are certain cases when this is annoying and you need to close and open the dialog again
+    DlgReal(3, "Min", -1000, 1000);
+    DlgCheck(4, "Check Min and Max");
+    DlgLabel(5, "Tick the latter if you want to check everytime you snippet the min and max");
+    DlgShow(throaway%, maxMVC, minMVC,checkMVC%,throaway%);
+
+    quickAnalysis%(which%);
+    return 1;
+end
+
+'QUICK ANALYSIS BETWEEN CURSORs 2 and 3 from snippet *************************************************************************
+Func quickAnalysis%(which%)
+
+  FrontView(mainVH%); 'set mainVH just to be sure to be in the time view'
+  'if MVC is true then return and store them in max and min MVC
+  if checkMVC% > 0 then
+    'Check max and min MVC and store the peak values. Useful for checking fatigue if subject can still reach 95% of the best or if he faked it'
+    if(maxMVC < ChanMeasure(fdbkdata%,8,Cursor(1),Cursor(2))) then
+      maxMVC := ChanMeasure(fdbkdata%,8,Cursor(1),Cursor(2));
+    endif
+    if(minMVC > ChanMeasure(fdbkdata%,9,Cursor(1),Cursor(2))) then
+      minMVC := ChanMeasure(fdbkdata%,9,Cursor(1),Cursor(2));
+    endif
+  endif
+
+    'Always set cursor 1 and 2 active to follow cursor 0 so easy to navigate and perform analysis each time you snippet'
+    'if CursorExists(1) = 0 and CursorExists(2) = 0 then
+    '    'Set cursor 1 and 2 in active mode
+    '    CursorActive(1,16, 0, "Cursor(0)+1");   'Expression
+    '    var tmp$ := "Cursor(1) + " + Str$(xywidth);    'I need to convert it
+    '    CursorActive(2,16, 0, tmp$);   'Expression
+    '  endif
+  'Create two horizontal cursor for max and min'
+  'HCursorDelete(-1); 'Delete all cursors otherwise will add tons of them
+  if HCursorExists(1) = 0 and HCursorExists(2) = 0 then
+        HCursorNew(1, -0);
+        HCursorNew(2, -0);
+  endif
+  HCursor(1);
+  HCursor(2);
+  HCursorActive(1,4, Cursor(2), Cursor(3), 0, 0);   ' Cursor 1 Max level
+  HCursorActive(2,5, Cursor(2), Cursor(3), 0, 0);   ' Cursor 2 Min level
+
+'''''''''''''''''' HERE in case you can play around with the cursor 2-3 to detect whatever you want
+    docase
+        case which% = 1 then CursorOpen(1, 1, -2, 10); '10 = Peak2Peak
+        case which% = 2 then CursorOpen(1, 1, -2, 1); '1 = Area
+        case which% = 3 then CursorOpen(1, 1, -2, 2); '2 = Mean
+        case which% = 4 then CursorOpen(1, 1, -2, 8); '8 = Max
+        case which% = 5 then CursorOpen(1, 1, -2, 9); '9 = Min
+        case which% = 6 then CursorOpen(1, 1, -2, 12); '12 = SD
+    endcase;
+
+end
+
+'BUTTON TO SEND FREEZE/UNFREEZE via CMD to EHCOWAVE*************************************************************************
+Func TapUS%()
+    ProgRun("C:/Users/Messung/Desktop/EchoWaveCMD.exe Tap");
+    return 1;
+end
+
+
+'MAKE HAND DRAW TRACES TO PLOT ************************************************************************
+Func MakeWave%()                                               			'Function to generate waveform
+DlgCreate("Playwave view parameters");                              			'Parameters dialog
+DlgReal(1,"Time Points Resolution / Frequency (Hz)",1,1000);
+DlgReal(2,"Playwave duration (s)",0.01,xywidth); '60 is the limit we put for the trace in the xy settings
+DlgReal(3, "Channel Offset", 0, 1000);
+DlgReal(4, "Channel Full Scale",0.0001,1000000);
+
+throaway% := DlgShow(pWaveRate,xywidth,outZero,outMax);    	'Return variables
+if throaway% > 0 then
+    View(mainVH%);
+    ToolbarSet(25, "Draw", AddPWave%);
+
+	if drawView% < 0 then                                            		'Clear any existing result views
+		View(drawView%);
+		FileClose(0,-1);
+		drawView% := 0;
+	endif;
+	pWaveInt := 1.0/pWaveRate;                                   		'Get sample interval
+    pWavePts% := xywidth*pWaveRate;                          		'Get number of points to output
+    drawView% :=SetResult(1,pWavePts%,pWaveInt,0,"PlayWave","s");    		'Set up result view with appropriate bin size etc
+    DrawMode(1,2);                                                      'Draw in waveform mode
+    YRange(1,outZero - (outMax-outZero),outMax);
+	ChanUnits$(1,"Channel Unit");
+    Window(0,0,100,100);    View(drawView%);
+    'Disable other buttons until ready for saving the draw
+        ToolbarEnable(1, 0);
+        ToolbarEnable(2, 0);
+        ToolbarEnable(3, 0);
+        ToolbarEnable(5, 0);
+        ToolbarEnable(6, 0);
+        ToolbarEnable(7, 0);
+        ToolbarEnable(8, 0);
+        ToolbarEnable(9,  0);
+        ToolbarEnable(10, 0);
+        ToolbarEnable(11, 0);
+        ToolbarEnable(13, 0);
+        'ToolbarEnable(15, 0);
+        ToolbarEnable(18, 0);
+        ToolbarEnable(19, 0);
+        ToolbarEnable(20, 0);
+        ToolbarEnable(25, 1);
+
+    FrontView(drawView%);
+	ToolbarMouse(drawView%,0,4,5,Down%,Up%,Move%);                   		'Set up mouse capture requiring shift and left mouse button to activate functions
+    ToolbarText("Keep press Shift while moving the mouse for drawing. Click 'Draw' to save the waveform for XY ramp");
+
+endif;
+return 1;
+end;
+'SAVE HAND TRACE TO PLOT IN XY *************************************************************************
+Func AddPWave%();
+    'get data from the sketch and then close the view
+    resize TraceToPlot [Len(View(drawView%).[])]; 'resize The array to plot
+    ArrConst(TraceToPlot,View(drawView%,1).[]); '.[] to get elements in the results view as array
+    View(drawView%);
+    FileClose(0,-1);
+
+    View(mainVH%);
+    ToolbarSet(25,"Draw Trace",MakeWave%);
+    ToolbarText("Collect awesome data!");
+    're-enable other buttons
+    ToolbarEnable(1, 1);
+    ToolbarEnable(2, 1);
+    ToolbarEnable(3, 1);
+    ToolbarEnable(5, 1);
+    ToolbarEnable(6, 1);
+    ToolbarEnable(7, 1);
+    ToolbarEnable(8, 1);
+    ToolbarEnable(9,  1);
+    ToolbarEnable(10, 1);
+    ToolbarEnable(11, 1);
+    ToolbarEnable(13, 1);
+   'ToolbarEnable(15, 0);
+    ToolbarEnable(18, 1);
+    ToolbarEnable(19, 1);
+    ToolbarEnable(20, 1);
+    ToolbarEnable(25, 1);
+
+    return 1;
+end;
+
+'GET MOUSE POSITION(s)*************************************************************************
+Func Down%(vh%,chan%,x,y,flags%)
+View(drawView%); 'Function for left mouse button press
+if XtoBin(x) >= 0 and XToBin(x) <= Len([])-1 then                	'If within range
+    [XToBin(x)] := y;                                            		'Set bin at mouse x position to mouse y position
+    oldX% := XtoBin(x);                                          	'Update variables with last mouse position
+    oldY := y;
+endif;
+return 1;
+end;
+
+
+Func Up%(vh%,chan%,x,y,flags%)                                   		'Function for left mouse button up
+return 1;
+end;
+
+Func Move%(vh%,chan%,x,y,flags%)                                		'Function for mouse movement
+var bin%;                                                       		'Current bin position of mouse
+var pts%;                                                       		'Number of points moved since last time function called
+View(drawView%);
+bin% := XToBin(x);                                              		'Get bin position
+if bin% >= 0 and bin% <= Len([])-1 then                         		'If within area
+    if bin% <> oldX% then                                       		'Has it moved?
+        pts% := Abs(bin%-oldX%);                                		'Count points moved since past call
+        var line[pts%+1];                                       		'Declare array to contain interpolated points
+            if bin% > oldX% then                                		'If mouse moved right (positive change)
+                ArrConst(line[1:pts%],(y-oldY)/pts%);           		'Fill array with incremental y change per bin
+                ArrIntgl(line[]);                               		'Integrate to get slope
+                ArrAdd(line[],oldY);                            		'Add starting level to array
+                ArrConst([oldX%:pts%],line[]);                  		'Add into result view
+            else
+                ArrConst(line[1:pts%],(oldY-y)/pts%);           		'Same process for moving left (negative change)
+                ArrIntgl(line[]);
+                ArrAdd(line[],y);
+                ArrConst([bin%:pts%],line[]);
+            endif;
+    else
+        [XToBin(x)] := y;                                       		'If not moved in x, update current bin with y mouse position
+    endif;
+    oldX% := bin%;                                              		'Update variables with mouse position
+    oldY := y;
+endif;
+    return 1;
+end;
+
+'UPDATE SEQUENCER AND SWITCH CHANNEL*************************************************************************
+Func SwitchChannel%(ChanToChk%)
+'Read each line and find the one with Channel
+'Create a new line with the new channel selected from the list in the script
+'Use find and replace to find the exact string and replace with the newer one
+'Save and load the sequencer again with the updated info
+'var ChTitle$ := ChanTitle$(ChanToChk%); 'This requires a time view to run
+var ChTitle$ := SampleTitle$(ChanToChk%); 'Use this because I check via config file BEFORE opening a time view
+'var seq% := FileOpen("*.pls",2,0,"Select seq file"); 'open dialog to load txt file with ramp 'invisible
+    var seq% := FileOpen(SampleSequencer$(),2,0); 'open the running/selected sequencer
+    'View(seq%);'Jump to the previously created sequencer/text view'
+    if (seq% > 0) then     ' if we opened a file...
+                    ReadSetup("\n"); 'line by line, hopefully no one fuck up the format
+                    var line$; 'later add two for because I initiliaze or adjust array based on the length of the sequencer
+                    MoveTo(0,0); 'Move to file start
+
+                    var i% := 0;
+                    var tempY$, OlDChLine$, NewChLine$;
+
+                    while Read(line$) >= 0 do 'read until the lines are finished
+
+                            if InStr(line$,"CHAN")>0 then 'Returns >0 if found, 0 if not
+                                OlDChLine$:= line$; 'Keep oldChLine for edit and replace later
+                                throaway% := InStr(line$,","); 'position of the comma, use the throaway var
+                                'Find chan selected after comma
+                                tempY$ := Mid$(line$,throaway%+1); 'y is the second part, so read the char after the comma to end
+                                NewChLine$ := Replace$(line$,tempY$," " + Str$(ChanToChk%) + "  ;Read data of " + ChTitle$); '" space N_ch ;Title channel"
+                                'FIND THE MATCHED STRING and REPLACE WITH NEW CHANNEL INFO
+                                MoveTo(0,0,i%+1); 'Move to line above for replace forward because the cursor go to line next
+                                EditFind(OlDChLine$, 1, 0); ' forward
+                                EditReplace(OlDChLine$, NewChLine$, 0, 0); 'Backwards
+                                MoveTo(0,0,i%+2); 'Skip last replace
+                            endif
+                            i% := i% +1;   'move to the next line
+                    wend;
+    endif;
+
+    View(seq%);'‘Jump to the previously created sequencer/text view'
+    FileSave(); 'Save updated Sequencer
+    FileClose();
+    'Re-run the newever updated sequencer DURING sampling
+    SampleSequencer(4, SampleSequencer$()); '4 for replace running sequencer
+
+    return 1;
+
+end
+
+'CHECK CHANNEL LIST "BEFORE" SEQUENCER EDIT AND SWITCH CHANNEL*************************************************************************
+Func ChkList_Seq%()
+
+    'Make a for loop starting from 1 to 100 (according to samplechaninfo up to 100).
+    'as soon as outp = 1 (so it is a waveform), GET the channel port/info of this (maybe not necassary because the value of the for loop
+    'is the channel number. Use this channel number for the sequencer update.
+    'if index == 100 then print the message.
+    var Outp%,ch_n%;
+
+    for ch_n% := 1 to 100 do
+           'Check each "channel" to see whether at least one waveform/adc exists
+           Outp% := SampleChanInfo(ch_n%,0); 'ch_n% = channel number, 0 if it is ADC type or 1 to get its port. I need ADC because of checking the waveform type
+           'PrintLog(Outp%);
+           'PrintLog("\n");
+           if Outp% = 1 then'4 = channel number, 0 if it is ADC type or 1 to get its port. I need ADC to check waveform.
+                'PrintLog("Channel number is:");
+                'PrintLog(ch_n%);
+                SwitchChannel%(ch_n%);
+                break;
+            endif;
+           'In case no waveform found maybe send a message
+           if ch_n% = 100 then
+                Message("No Wavefrom channel detected in the sampling configuration!\nPlease comment last part of the sequencer otherwise it crashes");
+           endif
+     next;
+
+  return 1;
+end;
+
+'QUICK 1ms TAP for afterwards exporting (e.g., fatigue contraction)*************************************************************************
+
+Func DAC1tap%()
+  SampleKey("T");    '1ms single pulse square wave DAC1
+  return 1;
+end
+
+
+''''''''''''' GET each process and value of each non virtual channel in the 3D matrix
+''TO NOTE: It doesn't work when processes ask for 2 arguments (i.e., interpolation)
+Func BackupChProcess%()
+
+    'Init
+    var list%[101];'nCh% := -1;'first element = to n channels
+    ChanList(list%, 0x200000); 'copy all except for the virtuals
+    var tmp% := 1;
+
+    resize mat_ch_proc[][list%[0]][]; 'resize as many non virtual channels as in the time view
+    ArrConst(mat_ch_proc[][][], 0);'reset EVERYTHING to ZEROs
+    ArrSub(mat_ch_proc [1:20] [] [0],1); 'set all potential processes to -1 because process id = 0 is rectify, so I need an ID that is unique for identifying the end of applied process of a given ch
+
+    var n_arg%;
+    while tmp% <= 100 do
+
+      if list%[tmp%] = 0 then 'if there is no more channel, then quit the while loop
+          break
+      else
+        'list_cor%[tmp%-1] := list%[tmp%];
+        'ChanProcessClear(list%[tmp%],0);
+        mat_ch_proc[0][tmp%-1] [0] := list%[tmp%]; 'save the channel number in the first col and n line
+        mat_ch_proc[0][tmp%-1] [1] := list%[tmp%]; 'save the channel number in the first col and n line
+
+        'mat_val[0][tmp%-1] := list%[tmp%]; 'save the channel number in the first col and n line
+
+        n_arg% := ChanProcessInfo(list%[tmp%]); 'return how many processes are added to the given channel
+        'the first added process is one
+        var i% := 1; 'first argument starts from 1
+
+        'go through each channel argument and save the id of the process AND the value of it in the two matrixes
+        for i% := 1 to n_arg% step 1 do
+
+            'get id of the process
+            mat_ch_proc[i%][tmp%-1] [0]:= ChanProcessInfo(list%[tmp%],i%); 'this return the process id number
+
+            'get value of that id process at argument 1, I assume you can only have 1 argument/n for each process???!
+            mat_ch_proc[i%][tmp%-1] [1] := ChanProcessArg(list%[tmp%],i%,1);
+         next
+
+        ChanProcessClear(list%[tmp%],0); 'remove all the operations from the current ch after saving its processes
+        tmp% := tmp%+1;
+
+      endif
+
+    wend
+    'return updated 3D matrix for reverse coding following saving
+    return 1
+end
+
+''''''''''' REVERSE : Applying back the processes to the channels
+Func ReApplyProc%()
+
+    'get how many channels are collected
+    var tmp% := Len(mat_ch_proc,1)-1;
+    var i% := 1, j% := 1, n_ch%, id% , value;
+    'For each channel, get the processes id and value, respectively'
+    for i% := 0 to tmp% step 1 do 'as many steps as many channels
+        n_ch% := mat_ch_proc [0][i%][0];'first position is the channel number
+        '0 = channel number, from 1 the potential '
+        for j% := 1 to 20 step 1 do 'as I assumed maximum 20 processes can be applied
+
+            if mat_ch_proc[j%][i%][0] = -1 then 'if no process added at this channel (i.e., = -1), skip
+                break;
+            else
+                id% := mat_ch_proc[j%][i%][0]; 'get id of the process
+                value := mat_ch_proc[j%][i%][1]; 'get value of the process
+                ChanProcessAdd(n_ch%,id%,value);
+            endif
+        next
+    next
+
+   return 1
+end
