@@ -759,7 +759,7 @@ case samplekey$ = "A" or samplekey$ = "B" then 'Message("No sequencer created ye
     SampleSeqVar(23, round(((StimP_set[1] - ChOffset) / ChScale) * 6553.6) + Threshold);
 else 'default' with US sync frame line in @ 100Hz, for SSC var 11, 15 and 16 are MULI in the sequencer, so no worries, it works for SSC too.
   SampleSeqVar(10,xywidth*100); 'Set to the sequencer V10 to the duration of XY width and then repeat it, makes calculation easier'
-  SampleSeqVar(11,(TP_Isomed[0]*100)-1); '-2 otherwise there is a shift of ~120ms due to a duty cycle for triggering the US
+  SampleSeqVar(11,(TP_Isomed[0]*100)-1); '-1 otherwise there is a shift of ~120ms due to a duty cycle for triggering the US
   SampleSeqVar(12,(TP_Isomed[1]*100)-1);
   SampleSeqVar(14,((xywidth-TP_Isomed[0])*100));
   SampleSeqVar(15,((TP_Isomed[1]-TP_Isomed[0])*100)-1);
