@@ -2,7 +2,7 @@
 
 'GLOBAL VARIABLE DECLARATIONS*****************************************************
 'View handles
-var mainVH% := FileOpen("Y:\\Documents\\Spike2_Collecting-main\\Spike_Config_FINALE\\Beta\\All.smrx",0, 3);'0
+var mainVH% := FileOpen("Y:\\Desktop\\Spike2_Collecting-main\\Spike_Config_FINALE\\Beta\\All.smrx",0, 3);
 var xyVH%;
 var drawView%;                                              				'Result view for drawing ramp
 
@@ -11,8 +11,7 @@ var lrampCH%, urampCH%, fdbckCH%;
 var repXYcycle% := 1; 'repetitive contractions on XY view
 var allXY%;
 var n% := 1; 'var for IDLE for checking how many contraction'
-'Channel duplication / calculations
-'var totalfdbckCH%, VLrmsCH%, VMrmsCH%, RFrmsCH%;
+
 'VARS to pass to the SEQUENCER '
 var TP_Isomed[2] := {4, 10};
 var Stim_Set[3] := {5,6,50}; 'beginning, end, frequency of the stimulation
@@ -37,7 +36,7 @@ var rampmax := Max(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], 
 var rampmin := Min(genxy[1], genxy[3], genxy[5], genxy[7], genxy[9], genxy[11], genxy[13], genxy[15]);
 var range := rampmax * allowedoffset;
 var game_mode% := 0;
-var factor := 1;
+var factor := 1;    'scaling factor in percentage
 var rampnumber%;    'to distinguish between ramp1, ramp2 and so on (currently only two ramps, ramp 3 as curve ramp, ramp 4 import array, ramp5 MVC, ramp6 hand draw)
 
 'View options
@@ -173,7 +172,6 @@ Func Idle%() 'idle works at a frequency of 330Hz on the 1401 power3'
         currentT := MaxTime();' use current T for all next instructions as it is more correct and the same for each process'
         relativetime := currentT - startramp;
         lastdata := ChanValue(fdbkdata%, currentT-fdbkoffset);
-        lastdataX := ChanValue(fdbkdataX, currentT-fdbkoffset); 'would be better to get MAXtime as var because between the X and Y feedback there might be a delta t'
         resetT := relativetime -(n%-1)*xywidth;
         View(xyVH%);
         if xyVH% > 0 then
@@ -182,6 +180,7 @@ Func Idle%() 'idle works at a frequency of 330Hz on the 1401 power3'
                 XYAddData(fdbckCH%, resetT, lastdata);
                 if (game_mode% = 1) then XRange(resetT -1, resetT +2); endif'Moving win in XY for following trace on X with Y fixed
             else 'if XY values from 2 channels gets it
+                lastdataX := ChanValue(fdbkdataX, currentT-fdbkoffset);'Read X feedbackd last data
                 XYAddData(fdbckCH%, lastdataX, lastdata);
             endif
         
@@ -229,7 +228,6 @@ Func New%()
 
     FileOpen("",6,1,"Select Sampling config file"); 'open dialog to load sampling config file
     SampleSequencer("D:/Paolo/Spike_final/fs_sequencer_adaptable.pls");     'sets sequencer file to use
-    'SampleSequencer("C:\\users\\crossover\\Documents\\Spike2_Collecting-main\\Spike_Config_FINALE\\Beta\\fs_sequencer_adaptable.pls");
 
     Message("WARNING! DISABLE ISOMED TRIGGER! Depending on the selected program rotation might occur.");
     ChkList_Seq%(); 'Run the function to update the CHAN in the sequencer file and avoid crash.
@@ -245,7 +243,7 @@ end;
 
 'XY-RAMP SETTINGS DIALOG***********************************************************
 Func XYRampSettings%()
-    var mxywidth := 60;
+    var mxywidth := 60;'max a minute?
 
     DlgCreate("Settings for ramps with up to eight points");
 
@@ -384,7 +382,7 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
 
  ' RAMP 3
     if rampnumber% = 2 then 'plot data from the TXT imported.
-        DlgEnable(0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,21);
+        DlgEnable(0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
         DlgEnable(1, 22, 23, 24, 25, 26);
         resize Import_rampY_scale [len(Import_rampY)]; 'Resize as Import_rampY_scale is used for both RAMP 3 and RAMP 5
         ArrConst(Import_rampY_scale,Import_rampY) ; 'create a scale Y array so the array multiplication doesn't affect the original one
@@ -407,8 +405,8 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
     endif
     'RAMP 5 (Hand draw)
     if rampnumber% = 4 then
-        DlgEnable(0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,21);
-        DlgEnable(1, 22, 23, 24, 25,26);        
+        DlgEnable(0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21);
+        DlgEnable(1, 22, 23, 24, 25, 26);        
         resize Import_rampY_scale [len(TraceToPlot)];
         ArrConst(Import_rampY_scale,TraceToPlot) ; 'create a scale Y array so the array multiplication doesn't affect the original one
         ArrMul(Import_rampY_scale, factor); 'scale the y values in case you want to change the intensity, but remember you are changing the original file
@@ -587,7 +585,7 @@ Func SetEquipment%()
     'DlgCheck(8, "DAC3"); 'To remove'
     DlgCheck(8, "Stimulation");
     DlgCheck(9, "Stimulation at specific value");
-    DlgLabel(10, "Note that not any/all combination are possible, please read the README. \nIsomed triggered after n sec, Ultrasound frame line at @100 Hz");
+    DlgLabel(10, "Note that not any/all combination are possible, please read the README. \nIsomed triggered after n sec, Ultrasound frame line at @100 Hz or using the CMD app");
     DlgLabel(11, "In case the Motion Capture needs a TTL, I suggest that you use DAC1. \nShort Tap not set here");
     'DlgShow(throaway%, uscheck%, tappercheck%, motioncapcheck%, isomedcheck%, savetrue%, shorttap%, throaway%);
     DlgShow(throaway%, savetrue%, uscheck%, isomedcheck%, isomedcheck2%, shorttap%, DAC1_TTL%, Stim%, StimP%, throaway%, throaway%);
@@ -713,7 +711,7 @@ else 'default' with US sync frame line in @ 100Hz, for SSC var 11, 15 and 16 are
   return 1;
 end
 
-'Function for opening Dialog and choose how many times to repeat the XY ramp view ***************************************************************************************
+'FUNCTION to set up values pass to the sequencer to create the desired condition and choose how many times to repeat the XY ramp view ***************************************************************************************
 Func RepXY%()
 
     var oldCh% := StimP_set[0]; 'local var used for a single local scope
@@ -721,12 +719,12 @@ Func RepXY%()
 
     DlgCreate("Repetitive XY & Sequencer Configuration");
     DlgLabel(1,"If repetition of XY ramp > 1, please tick GAME-MODE in the XY-ramp");
-    DlgLabel(2,"CAUTION! The Snippet works based on the 'X-range Time' value and not on the last TimePoint value!");
+    DlgLabel(2,"CAUTION! The Snippet works based on the 'Snippet time of XY ramp' value and not on the last X value!");
     DlgInteger(3,"Repetition of the XY view", 1, 100);    'there are certain cases when this is annoying and you need to close and open the dialog again
 
     DlgGroup("IsoMed rotation settings",1,4,85,3);
-    DlgReal(5, "TimePoint IsoMed Rotation 1 (s)",1, xywidth);
-    DlgReal(6, "TimePoint IsoMed Rotation 2 (s)",1, xywidth);
+    DlgReal(5, "TimePoint IsoMed Rotation 1 (s)",1, xywidth-0.25);'as US is triggered at 100Hz, if last rotation - XY time < 0.1 == infinite loop
+    DlgReal(6, "TimePoint IsoMed Rotation 2 (s)",1, xywidth-0.25);
 
     DlgGroup("Stimulation settings", 1, 7, 85,5);
     DlgReal(8, "Beginning Stimulation (s)", 0, xywidth-1);
@@ -767,10 +765,10 @@ end
 'FUNCTION FOR UPDATING REAL-TIME NUMBER OF STIMULATION **************************************************************************
 Func UpdateNumStim%(item%)
 var v%;
-docase
-    case ((item% = 8) or (item% = 9) or (item% = 10)) then '0 is initial setup
-     v% := (DlgValue(9) - DlgValue(8)) * DlgValue(10);'need to round for DBNZ in the sequencer
-     DlgValue$(11,"Number of stimulations: " + Str$(v%));'Update value in the dialog
+    docase
+        case ((item% = 8) or (item% = 9) or (item% = 10)) then '0 is initial setup
+         v% := (DlgValue(9) - DlgValue(8)) * DlgValue(10);'need to round for DBNZ in the sequencer
+         DlgValue$(11,"Number of stimulations: " + Str$(v%));'Update value in the dialog
 endcase;
 return 1;                     'Return 1 to keep dialog running
 end;
