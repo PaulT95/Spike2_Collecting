@@ -61,7 +61,7 @@ OISOMED: 'S DAC    1,3             ;TTL from DAC1
             DIGOUT [....ii..]      ;Second rotation
             MOV    V1,V16       ;-3 because of current instruction + the next ones is 3 ticks
             MUL    V1,V13,-3
-            DELAY  V16             ;3 steps caluclation of the ticks operations
+            DELAY  V1             ;3 steps caluclation of the ticks operations
             DAC    1,0
             HALT
 
@@ -88,10 +88,10 @@ ULTRAMU:    DAC    2,4
             DELAY  s(1/200)-1
             DBNZ   V1,ULTRAMU      ;REP CYCLE TILL FIRST TRIGGER OF ISOMED
 
-            DAC    2,4
-            DELAY  s(1/200)-4
-            DAC    2,0
-            DELAY  s(1/200)-2
+;            DAC    2,4
+;            DELAY  s(1/200)-4
+;            DAC    2,0
+;            DELAY  s(1/200)-2
             DIGOUT [....ii..]
 
 ULTRAMU2:   DAC    2,4
@@ -114,10 +114,10 @@ ULTRAMUS:   DAC    2,4
             DELAY  s(1/200)-1
             DBNZ   V1,ULTRAMUS     ;REP CYCLE TILL FIRST TRIGGER OF ISOMED
 
-            DAC    2,4
-            DELAY  s(1/200)-4
-            DAC    2,0
-            DELAY  s(1/200)-2
+;            DAC    2,4
+;            DELAY  s(1/200)-4
+;            DAC    2,0
+;            DELAY  s(1/200)-2
             DIGOUT [....ii..]
 
 ULTRAMD:    DAC    2,4
@@ -126,10 +126,10 @@ ULTRAMD:    DAC    2,4
             DELAY  s(1/200)-1
             DBNZ   V2,ULTRAMD      ;Repeat till V12 second time trigger ISOMED
 
-            DAC    2,4
-            DELAY  s(1/200)-4
-            DAC    2,0
-            DELAY  s(1/200)-2
+;            DAC    2,4
+;            DELAY  s(1/200)-4
+;            DAC    2,0
+;            DELAY  s(1/200)-2
             DIGOUT [....ii..]
 
 ULTRAMH:    DAC    2,4
@@ -137,6 +137,7 @@ ULTRAMH:    DAC    2,4
             DAC    2,0
             DELAY  s(1/200)-1
             DBNZ   V3,ULTRAMH      ;Repeat till end of XY width
+            DELAY  3 ;3tick because of previous instructs
             DAC    1,0             ;report dac 1 to zero
             HALT
 
