@@ -635,7 +635,7 @@ Func Snippet%()
         n% := 1; 'reset number of contractions/XY performed'
 
         Cursor(0, MaxTime());
-        'CursorVisible(0,1);
+        CursorVisible(0,1);
         CursorActive(0,14, 31, 0, "", "", 1);   'Data points --> keyboard. Make cursor 0 active to search keyboard
         'easy to navigate everytime you snippet'
 
