@@ -8,14 +8,14 @@ The primary functions and operational details of this script are described in th
 ### Main features
 1. **Ramps and Traces with Real-Time Visual Feedback**:
    - Users can create or import linear ramp directly in Spike2
-   - Select a channel from the Sampling configuration for live feedback plotting.
-   - Import non-linear or custom traces to plot and import from `.txt` files (formatted as two columns: X for time, and Y for the ramp/trace array). Examples available in MATLAB/Python for generating sinewave ramps are in the extra folder.
+   - Select two channels from the Sampling configuration for live feedback plotting. By default X = Time (none), Y = a channel. However, it is now possible to select both X and Y channels over time. 
+   - Import non-linear or custom traces to plot and import from `.txt` files (formatted as two columns: X for time or any other channel/variable, and Y for the ramp/trace array). Examples available in MATLAB/Python for generating sinewave ramps are in the extra folder.
    - A hand-draw feature is included for creating custom paths with the mouse.
    - Users can visualize and follow real-time feedback and follow specific traces designed in the XY ramp.
 
 2. **Snippet Functionality**:
    - Lunch the visual live feedback, while the sequencer does the hard work in the back ground. Extract then the data within a user-defined XY range (default: 15s) set in the XY-ramp settings.
-   - The snippet exports all **RAW** channels as a `.MAT` file, capturing data from Cursor(0) to Cursor(0) + (X range * n repetition) + 1s. This includes one second before and after the defined range to ensure comprehensive data collection.
+   - The snippet exports all **RAW** channels as a `.MAT` file, capturing data from Cursor(0) to Cursor(0) + (XY width range * n repetition) + 1s. This includes one second before and after the defined range to ensure comprehensive data collection.
 
 Further details and explanation are provided in the readme file.
 
