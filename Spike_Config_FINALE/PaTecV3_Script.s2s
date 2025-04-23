@@ -1243,42 +1243,49 @@ end
 '''''''''''''' CREATE POLY FIT 1ST GRADE between Angle and Torque channel to create virtual channel with active torque.
 Func FitPassiveTorque%()
 
-    Message("Be aware that the Isomed will be triggered FOUR times if you press OKAY in the next pop-up window.\nInstruct your participant to stay relaxed!");
+   Message("Be aware that the Isomed will be triggered FOUR times if you press OKAY in the next pop-up window.\nInstruct your participant to stay relaxed!");
     'Local vars
-    var ch_Ang%, ch_Tor%, chk%;
-    DlgCreate("Select the chane for active torque",0,0,60,6);
+    var ch_Ang%, ch_Tor%, chk%, pOrd%, tmpOrd$;
+    DlgCreate("Select the chane for active torque",0,0,60,8);
     DlgChan(1,"Select the Angle Channel (X)",0x40000);
     DlgChan(2,"Select the Torque Channel (Y)",0x40000);
-    DlgLabel(3,"Be sure that your Cursor(0) and Cursor(1) range in an interval \nwhere the participant was relaxed and the rotation(s) occured\nIf the torque is negative,just add a -(minus)\nin the expression of the virtual chan");
+    DlgList(3,"Select polyfit order","1|3");
+    DlgLabel(4,"Be sure that in the next 17seconds (between Cursor(0) and Cursor(1)) \nthe participant stays relaxed while the rotations occur\nIf the torque is negative,just add a -(minus)\nin the expression of the virtual chan that will appear\n");
 
     DlgAllow(0x3ff,0);
-    chk% := DlgShow(ch_Ang%, ch_Tor%,throaway%);  'Allow all, no idle, change function
+    chk% := DlgShow(ch_Ang%, ch_Tor%, pOrd%, throaway%);  'Allow all, no idle, change function
 
     if (chk% = 0)then'if click cancel, simply exit
-        halt; 'break
+        return 1; 'break
     endif
+'List returns an index so I need to correct then
+    docase
+        case pOrd% = 0 then pOrd% := 1; 
+        case pOrd% = 1 then pOrd% := 3;   
+    endcase
+
 
     Cursor(0, MaxTime()); 'set cursos 0 '
     CursorVisible(0,1);
 
-    Yield(2.5); 'wait 2.5s'
+    Yield(3); 'wait 3s'
     Isomed%(); 'move isomed first time'
-    Yield(2.5); 'wait 5 second to rotation occur and some rest data in case(depends on ROM and velocity)'
+    Yield(3); 'wait 3 second to rotation occur and some rest data in case(depends on ROM and velocity)'
     Isomed%();
-    Yield(2.5); 'wait another 2.5s'
+    Yield(3); 'wait another 3'
     Isomed%();
-    Yield(2.5); 'wait another 2.5s'
+    Yield(3); 'wait another 3'
     Isomed%();
-    Yield(2.5); 'wait another 2.5s'
+    Yield(5); 'wait 5s to have potential baseline afterwards'
     CursorNew(MaxTime(),1);
-    Cursor(1, MaxTime()); 'set cursor 1, 
+    Cursor(1, MaxTime()); 'set cursor 1,
     'count points collected between the set cursors for pre-allocation
     const n_pt% := CountWave%(ch_Tor%,Cursor(0), Cursor(1)); 'N-pts to be determined via fucntion
     var Tor[n_pt%], Ang[n_pt%]; 'Real and integer wave, first time
     ChanData(ch_Tor%, Tor, Cursor(0), Cursor(1));   'Read data
     ChanData(ch_Ang%, Ang, Cursor(0), Cursor(1));   'Read data
     'Define fitting, in this case poly fit, 1st grade (i.e., linear)'
-    var coefN% := FitData(2,1);'set fitting to poly fitting and 3rd order
+    var coefN% := FitData(2,pOrd%);'set fitting to poly fitting and the selected order
     var coeff_fit[coefN%]; 'pre allocation how many coeff'
     'var tmp :=
     FitData(1,Tor,Ang);'Fit the data according to the fitting chose, tmp := 0 --> fitting completed
@@ -1294,14 +1301,22 @@ Func FitPassiveTorque%()
     ChanTitle$(ch1%, "Active Torque");
     ChanUnits$(ch1%, "Nm");
 
+    'FIRST PART OF EQUAL ALWAYS THE SAME'
     var strT$ := "Ch(" + Str$(ch_Tor%) + ") - ("; 'create strig channel "Torque - (" already the fit
     var strA$ := "Ch(" + Str$(ch_Ang%) + ")"; 'Create string channel "Angle"
-
-    var expr_vChan$ := strT$ + strA$ + "*" + Str$(coeff_fit[0]) + "+" + Str$(coeff_fit[1]) + ")";
+    var expr_vChan$;
+    if pOrd% = 1 then
+      expr_vChan$ := "(" + strT$ + strA$ + "*" + Str$(coeff_fit[0]) + "+" + Str$(coeff_fit[1]) + "))"; 'first it's fast
+    else 'third order I prefer to split to avoid too long text--> sometimes Spike2 doesn't allow long text for a variaible
+      var fitStr$ := "Cub(" + strA$ + ")*" + Str$(coeff_fit[0]) + " + Sqr(" + strA$ + ")*" + Str$(coeff_fit[1]) + "+" + strA$ + "*" + Str$(coeff_fit[2]) + "+" + Str$(coeff_fit[3]);
+      expr_vChan$ :=  "(" + strT$ + fitStr$ + "))"; 'add parentheses so easy to add a - in front of expression in case torque is negative
+    endif
+    'Create the channel according tot the equation'
     VirtualChan(ch1%, expr_vChan$, ch_Tor%);  'Match angle or torque channel interval? Torque
     Optimise(ch1%);
     return 1;
 end
+
 
 ''' FUNCTION to count pts between two cursors in a given channel, necessary for pre-allocation
 Func CountWave%(chan%, tFrom, tTo)
