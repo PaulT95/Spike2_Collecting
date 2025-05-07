@@ -89,26 +89,24 @@ DoToolbar();
 Proc DoToolbar()
     ToolbarClear();
     ToolbarSet(0, "", Idle%);
-    'ToolbarSet(27,"Seq_write", SwitchChannel%);
+
     ToolbarSet(26,"Active Tor. Ch.", FitPassiveTorque%);
     ToolbarSet(25, "Draw Trace",MakeWave%);
     ToolbarSet(22, "Start Sampling", New%);
     ToolbarSet(20, "Main view", ChangeView%);
     ToolbarSet(19, "Rep XY/Seq Config", RepXY%);
     ToolbarSet(18, "XY-Ramp", XYRampSettings%);
-    'ToolbarSet(15, "Get XY-Data", GetXYData%);
 
     ToolbarSet(13, "MVC Opts", setMVC%);
-
     ToolbarSet(10, "Equipment Options", SetEquipment%);
     ToolbarSet(11, "Analysis Options",SetAnalysisOpts%);
     ToolbarSet(9, "Snippet", Snippet%);
-    ToolbarSet(8, "DAC1 TAP", DAC1tap%);
+    ToolbarSet(8, "Stop Snippet", StopSnippet%);
+    ToolbarSet(7, "DAC1 TAP", DAC1tap%);
 
-    'ToolbarSet(7, "DAC3 ON", DAC3ON%);
-    ToolbarSet(7, "Un/Freeze US", TapUS%);
-    ToolbarSet(6, "Start US", USStart%);
-    ToolbarSet(5, "Move IsoMed", Isomed%);
+    ToolbarSet(6, "Un/Freeze US", TapUS%);
+    ToolbarSet(5, "Start US", USStart%);
+    ToolbarSet(4, "Move IsoMed", Isomed%);
 
     ToolbarSet(3, "StopSampling", StopSampling%);
     ToolbarSet(2, "SaveEverything", SaveData%);
@@ -125,6 +123,7 @@ Proc DisplayButtons()
         ToolbarEnable(1, 0);
         ToolbarEnable(2, 0);
         ToolbarEnable(3, 0);
+        ToolbarEnable(4, 0);
         ToolbarEnable(5, 0);
         ToolbarEnable(6, 0);
         ToolbarEnable(7, 0);
@@ -133,7 +132,6 @@ Proc DisplayButtons()
         ToolbarEnable(10, 0);
         ToolbarEnable(11, 0);
         ToolbarEnable(13, 0);
-        'ToolbarEnable(15, 0);
         ToolbarEnable(18, 0);
         ToolbarEnable(19, 0);
         ToolbarEnable(20, 0);
@@ -144,6 +142,7 @@ Proc DisplayButtons()
         ToolbarEnable(1, 0);
         ToolbarEnable(2, 1);
         ToolbarEnable(3, 1);
+        ToolbarEnable(4, 1);
         ToolbarEnable(5, 1);
         ToolbarEnable(6, 1);
         ToolbarEnable(7, 1);
@@ -152,7 +151,6 @@ Proc DisplayButtons()
         ToolbarEnable(10, 1);
         ToolbarEnable(11, 1);
         ToolbarEnable(13, 1);
-        'ToolbarEnable(15, 1);
         ToolbarEnable(18, 1);
         ToolbarEnable(19, 1);
         ToolbarEnable(20, 1);
@@ -502,10 +500,10 @@ Func XYWindow%()
                 XYAddData(lrampCH%, Import_rampX[x%], Import_rampY_scale[x%]-range);
                 XYAddData(urampCH%, Import_rampX[x%], Import_rampY_scale[x%]+range);
             next;
-        else   'case X is another variable, calculate +- offset (as percentage)<-- not use yet this makes really sense
+        else   'case X is another variable, calculate +- offset (as percentage)<-- not sure yet this makes really sense
              for x% := 0 to len(Import_rampX)-1 do
-                    XYAddData(lrampCH%, Import_rampX[x%]*(1-allowedoffset), Import_rampY_scale[x%]*(1-allowedoffset));
-                    XYAddData(urampCH%, Import_rampX[x%]*(1+allowedoffset), Import_rampY_scale[x%]+(1-allowedoffset));
+                    XYAddData(lrampCH%, Import_rampX[x%], Import_rampY_scale[x%]-range);
+                    XYAddData(urampCH%, Import_rampX[x%], Import_rampY_scale[x%]+range);
                 next;
         endif
 
@@ -658,13 +656,19 @@ Func Snippet%()
           ProgRun("C:/Users/Biomech/Desktop/EchoWaveCMD.exe Run");    'Set the path of where you put the EXE file! Run in case of stimulation as the sequencer needs to be free
         endif
 
-
         if savetrue% = 1 then idlesave% := 1; endif;    'idle function checks for state of idlesave% variable
         'if storecramp% = 1 then idlecramp% :=1; endif;     'idle function checks for state of idlecramp% variable
     endif
     return 1;
 
 end;
+
+'FUNCTION TO STOP SNIPPET and HALT ANY SEQUENCER INSTRUCTION SENT************************
+Func StopSnippet%()
+  SampleKey("P");
+  allXY% := 0; 'The if statement the idle that is true'
+  return 1;
+end
 
 'FUNCTION TO CHECK LAST XY view AND SETUP THE SEQUENCER BEFORE SNIPPET************************
 Func SetUp_VarSeq%()
@@ -1260,8 +1264,8 @@ Func FitPassiveTorque%()
     endif
 'List returns an index so I need to correct then
     docase
-        case pOrd% = 0 then pOrd% := 1; 
-        case pOrd% = 1 then pOrd% := 3;   
+        case pOrd% = 0 then pOrd% := 1;
+        case pOrd% = 1 then pOrd% := 3;
     endcase
 
 

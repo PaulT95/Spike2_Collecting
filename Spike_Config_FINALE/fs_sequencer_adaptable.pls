@@ -21,11 +21,14 @@
             DAC    3,0             ;DAC 3 set to zero -- > TTL for relay circuit, button switch <10us, var3
             DIGOUT [....01..]      ;digital bits 2 and 3 control the isomed, initially one of them is set high to be able to simply invert them
 ;!!!!! A WARNING should be send to the user before running the sequencer / the script that is calling it !!!!!
-            HALT
+HALT
 
-
-;MOVE ISOMED
-ISOMED: 'I  DIGOUT [....ii..]      ;move Isomed
+;HALT ANY SNIPPET AND STOP ANY DAC/digout
+STOPSNI: 'P DIGOUT [0000..00] ;everything zero except for the ISOMED
+            DAC 0, 0
+            DAC 1, 0
+            DAC 2, 0
+            DAC 3, 0
             HALT
 
 ;QUIT AND PUT ALL BITs BACK TO 0
@@ -35,6 +38,11 @@ QUIT:   'Q DIGOUT [00000000]
            DAC 2, 0
            DAC 3, 0
            HALT
+
+;MOVE ISOMED
+ISOMED: 'I  DIGOUT [....ii..]      ;move Isomed
+            HALT
+
 
 ;DEFINITIONS FOR TESTING PURPOSES APART FROM THE STUDY PROTOCOL
 ;INFINITE ULTRASOUND DUTY CYCLE @ 100Hz
@@ -51,7 +59,7 @@ INFUS:  'U  DAC    2,4             ;INFINITE US
 
 ;MOVE ISOMED TWICE FOR FAST Stretch-shortening/ Shortening Stretch cycle.
 OISOMED: 'S DAC    1,3             ;TTL from DAC1
-            MOV    V1,V11       ; -2 because of this and the upcoming instruction till delay are 4 ticks         
+            MOV    V1,V11       ; -2 because of this and the upcoming instruction till delay are 4 ticks
             MUL    V1,V13,-3         ;1000 because I am passing the values for the other cycles multiplied by 100. need to remove 3 ticks
             DELAY  V1             ;move only Isomed after time defined in the script
             DIGOUT [....ii..]      ;First rotation
@@ -271,12 +279,12 @@ TESTPT: 'A DAC   1,3
          VAR     V99=4            ;empty var necessary for using SUB
 
 
-MATCH:   BLT    V4,3,XEND
+MATCH:   BLT    V4,4,XEND
          SUB    V4,V99       ;'remove at each ticks
          CHAN   data, 1  ;Read data of Torque
          BGT    data,low,MATCH   ;
          BLT    data,level,MATCH  ;
-         
+
          ;DIGOUT [....ii..] ;trigger rot
          ;Make a loop here based on the xywidth variable
 ;BELOW:   CHAN    data, 1  ;Read data of Torque
@@ -288,21 +296,6 @@ MATCH:   BLT    V4,3,XEND
          DELAY ms(1)-1
          DIGOUT  [.......0]
          SUB V4,V99,-100 ;100 = 1ms
-         DELAY V4       ;wait till the end of the XY ramp  
+         DELAY V4       ;wait till the end of the XY ramp
 
 XEND:    DAC 1,0
-         HALT
-;Solution from graphical sequencer which I like more, because with the other one I would need jumps I guess because the code is sequential
-;R00:        DBNZ Vx -3based on XY width?
-;            CHAN   data, 1  ;Read data of Torque
-;            BGT    data,low,R00   >Wait chan 33 in 15 to 15.5
-;            BLT    data,level,R00   >Wait chan 33 in 15 to 15.5
-
-
-
-SIT:      's DELAY s(32)
-             DIGOUT [00000001]      ;Turn on signal   (second stim)
-             DIGOUT [00000000]      ;Turn off signal
-             DELAY s(5)
-             DIGOUT [00000001]      ;Turn on signal   (second stim)
-             DIGOUT [00000000]      ;Turn off signal
