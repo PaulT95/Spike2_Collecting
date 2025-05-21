@@ -2,7 +2,7 @@
 
 'GLOBAL VARIABLE DECLARATIONS*****************************************************
 'View handles
-var mainVH% := 0;'FileOpen("Y:\\Desktop\\Spike2_Collecting-main\\Spike_Config_FINALE\\Beta\\All.smrx",0, 3);
+var mainVH% := 0; 'FileOpen("Y:\\Desktop\\Spike2_Collecting-main\\Spike_Config_FINALE\\All.smrx",0, 3);
 var xyVH%;
 var drawView%;                                              				'Result view for drawing ramp
 
@@ -303,20 +303,24 @@ Func ChangeXYSettingsDLG%(item%)    'item% is the item number that was changed
             rampnumber% := DlgValue(item%);
 
             if rampnumber% = 2 then 'if select ramp3 import txt file and overwrite values in the temp array
-                fh% := FileOpen("*.txt",8,0,"Select Text file with the array"); 'open dialog to load txt file with ramp
+                fh% := FileOpen("*.txt;*.csv",8,0,"Select Text file with the array"); 'open dialog to load txt file with ramp
                 if (fh% > 0) then     ' if we opened a file...
 
                     ReadSetup("\n"); 'check the format of the file!!!
                     var line$; 'later add two for because I initiliaze or adjust array based on the length of the txt
-
+                    var extFile$ := FileName$(5); 'get extension of current file/view, necessary for csv
                     var i% := 0;
                     while Read(line$) >= 0 do 'read until the lines are finished
                         'resize array until all the lines are read
                         resize Import_rampX[i%+1]; resize Import_rampY[i%+1];
                         throaway% := InStr(line$,","); 'position of the comma, use the throaway var
                         tempY$ := Mid$(line$,throaway%+1); 'y is the second part, so read the char after the comma to end
+                        var tempX$ := (Mid$(line$,1,throaway%-1)); 'with csv file the first is always 0 although it's read correctly
+                        if i% = 0 and extFile$ = ".csv" then
+                            tempX$:= (Mid$(line$,2,throaway%-1)); 'for some reason csv must start the first very number x at position 2
+                        endif
                         'Save values in x and y array to plot later
-                        Import_rampX[i%]:= Val(line$); 'by default it reads the first col to the comma which is x
+                        Import_rampX[i%]:= Val(tempX$); 'convert x string to a number
                         Import_rampY[i%]:= Val(tempY$); 'convert y string to a number
 
                         i% := i% +1;   'move to the next line
@@ -502,8 +506,8 @@ Func XYWindow%()
             next;
         else   'case X is another variable, calculate +- offset (as percentage)<-- not sure yet this makes really sense
              for x% := 0 to len(Import_rampX)-1 do
-                    XYAddData(lrampCH%, Import_rampX[x%], Import_rampY_scale[x%]-range);
-                    XYAddData(urampCH%, Import_rampX[x%], Import_rampY_scale[x%]+range);
+                    XYAddData(lrampCH%, Import_rampX[x%]*(1-allowedoffset), Import_rampY_scale[x%]-range);
+                    XYAddData(urampCH%, Import_rampX[x%]*(1+allowedoffset), Import_rampY_scale[x%]+range);
                 next;
         endif
 
