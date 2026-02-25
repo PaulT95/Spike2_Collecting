@@ -431,31 +431,27 @@ ENDR2:      DELAY  V1              ;use always V1 at the end of each part as tri
             HALT
 
 ;;;;;;;;;;;;;;;;;;;
-;STIM and a random rotation for checking Stim @ SPECIFIC VALUEpt
-;Keep it in mind that CHAN treats data as 16bits, 1  ;Read data of Torque
+;STIM and no rotation for checking Stim @ SPECIFIC VALUEpt
+;Keep it in mind that CHAN_command treats data as 16bits,
 ;however you CANNOT use VDAC16 with a variable, that's why I convert that in the script first
 TESTPT: 'A DAC   1,3
         ;DIGOUT [....ii..] ;trigger rot
         VAR     V5=4            ;empty var necessary for using SUB in a loop properly
-        VAR     V1,level         ;level to cross
-        VAR     V2,data          ;to hold the last data
-        VAR     V3,low           ;some sort of hysteresis level
-        MOV     level, V22
-        MOV     low, V23         ;copy converted voltage values because I can't use VDAC16 with a variable
+        VAR     V1         ;level to cross
+        VAR     V2          ;to hold the last data
+        VAR     V3           ;some sort of hysteresis level
+        MOV     V1, V22
+        MOV     V3, V23         ;copy converted voltage values because I can't use VDAC16 with a variable
         MOV     V4,V10,-6        ;copy XY range var -6 ticks because of previous commands, however adjust later on
 
         MATCH:   BLE    V4,4,XEND   ;if the amount of time the XY view (so snippet time) <= 4 ticks, jump to the end because ramp finished
                  SUB    V4,V5       ;Remove at each loop the amount ticks needed for the loop although
-                 CHAN   data, 1  ;Read data of Torque
-                 BGT    data,low,MATCH   ;keep checking whether data is within such "hysterisys"
-                 BLT    data,level,MATCH ;keep checking, if I get here I actually NEED to remove an additional tick right?
+                 CHAN   V2, 1  ;Read data of Torque
+                 BGT    V2,V3,MATCH   ;keep checking whether data is within such "hysterisys"
+                 ADD    V4, V5, -6; add 4 and remove 6 as this instruction and the next will take 2 additional ticks
+                 BLT    V2,V1,MATCH ;keep checking
 
-      ;DIGOUT [....ii..] ;trigger rot randomly for checking. Code implementation necessary
-      ;Make a loop here based on the xywidth variable
-      ;BELOW:   CHAN    data, 1  ;Read data of Torque
-      ;         BGT     data,low,below   ;wait for below     >wait below
-      ;ABOVE:   CHAN    data, 1  ;Read data of Torque
-      ;         BLE     data,level,above ;wait for above     >wait above
+
 
       ;send the pulse of 1ms as soon as both conditions are NOT satisfied (i.e., value within the histerisys)
       DIGOUT  [.......1]       ;pulse output for 1ms
@@ -465,3 +461,49 @@ TESTPT: 'A DAC   1,3
       DELAY V4       ;wait till the end of the XY ramp
 
       XEND:    DAC 1,0
+               HALT
+
+
+;;;;;;;;;;;;;;;;;;;
+;STIM and two rotations for checking Stim @ SPECIFIC VALUEpt, at the moment stim/check occur after the first rotation
+;Keep it in mind that CHAN_command treats data as 16bits,
+;however you CANNOT use VDAC16 with a variable, that's why I convert that in the script first
+MATIT: 'C DAC   1,3
+        ;DIGOUT [....ii..] ;trigger rot
+        VAR     V5=4            ;empty var necessary for using SUB in a loop properly
+        VAR     V1         ;level to cross
+        VAR     V2          ;to hold the last data
+        VAR     V3           ;some sort of hysteresis level
+        MOV     V1, V22
+        MOV     V3, V23         ;copy converted voltage values because I can't use VDAC16 with a variable
+        MOV     V4,V10,-6        ;copy XY range var -6 ticks because of previous commands, however adjust later on
+        ;isomed rot parms
+        MOV    V9,V11,-7           ;delta time between begin xy and first rot
+
+        MOV    V6,V12,-8
+        SUB    V6,V11,-1
+        SUB    V4,V12,-1      ;delta time between second rot and end of the XY ramp (for repetitive ones is important)
+
+        DELAY  V9             ;5+1 instructions before
+
+        DIGOUT [....ii..] ;first rotation
+
+        MATCHC:  BLE    V6,4,TEND   ;if the amount of time the XY view (so snippet time) <= 4 ticks, jump to the end because ramp finished
+                 SUB    V6,V5       ;Remove at each loop the amount ticks needed for the loop although
+                 CHAN   V2, 1  ;Read data of Torque
+                 BGT    V2,V3,MATCHC   ;keep checking whether data is within such "hysterisys"
+                 ADD    V6, V5, -6; add 4 and remove 6 as this instruction and the next will take 2 additional ticks
+                 BLT    V2,V1,MATCHC ;keep checking,
+
+      ;send the pulse of 1ms as soon as both conditions are NOT satisfied (i.e., value within the histerisys)
+      DIGOUT  [.......1]       ;pulse output for 1ms
+      DELAY ms(1)-1
+      DIGOUT  [.......0]
+
+      SUB V6,V5,-100 ;100 = 1ms, so remove the previous stimulation time, however it may result in negative results, will this result in infinite loop?
+
+ TEND: DELAY V6
+       DIGOUT [....ii..] ;second rot
+       DELAY V4       ;wait till the end of the XY ramp
+       DAC 1,0
+       HALT
