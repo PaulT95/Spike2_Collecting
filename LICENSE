@@ -1,21 +1,91 @@
-MIT License
+# Non-Commercial Research License
 
 Copyright (c) 2023 Paolo Tecchio
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+of this software and associated documentation files (the "Software"), to use,
+copy, modify, and redistribute the Software, subject to the following
+conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. NON-COMMERCIAL USE
+
+The Software may be used, copied, modified, and redistributed solely for
+non-commercial purposes.
+
+You may use the Software for research, education, teaching, academic,
+personal, and other non-commercial purposes.
+
+You may not use the Software, or any substantial portion of it, for purposes
+that are primarily intended for or directed towards commercial advantage or
+monetary compensation, including but not limited to:
+
+* selling the Software or modified versions of the Software;
+* incorporating the Software into a commercial product or service;
+* licensing the Software or modified versions for commercial use;
+* using the Software to provide a paid service where the Software itself
+  constitutes a substantial component of that service; or
+* otherwise commercially exploiting the Software.
+
+Commercial use requires prior written permission from the copyright holder.
+
+2. ATTRIBUTION
+
+Any use, modification, or redistribution of the Software must give appropriate
+credit to the original author, Paolo Tecchio.
+
+When reasonably possible, attribution must include:
+
+Paolo Tecchio
+https://github.com/PaulT95/
+
+and a reference or link to the original repository from which the Software
+was obtained.
+
+If the Software contributes to a scientific publication, presentation,
+thesis, report, or other scholarly work, the original repository and/or
+associated publication should be cited.
+
+3. REDISTRIBUTION
+
+You may redistribute the original Software or modified versions of the
+Software for non-commercial purposes, provided that:
+
+* this license is included with the redistributed Software;
+* the original copyright notice is retained;
+* the attribution requirements in Section 2 are retained;
+* modifications are clearly identified; and
+* the recipient is informed that the Software is subject to this license.
+
+4. MODIFICATIONS
+
+You are free to modify the Software for non-commercial purposes.
+
+If you redistribute a modified version, you must clearly indicate that the
+Software has been modified and must not represent the modified version as
+the original Software or imply endorsement by Paolo Tecchio.
+
+5. NO COMMERCIAL RIGHTS
+
+Nothing in this license grants permission to use the Software for commercial
+purposes (neither the stl model file).
+
+Permission for commercial use may be granted separately by the copyright
+holder at their discretion.
+
+6. NO ENDORSEMENT
+
+This license does not grant permission to use the name, image, affiliation,
+or other identifying information of Paolo Tecchio to imply endorsement,
+sponsorship, or official association with any modified or redistributed
+version of the Software.
+
+7. DISCLAIMER OF WARRANTY
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR
+OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE
+USE OR OTHER DEALINGS IN THE SOFTWARE.
