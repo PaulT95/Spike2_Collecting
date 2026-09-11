@@ -1,4 +1,4 @@
-<a href="https://github.com/PaulT95/Spike2_collecting">PATEC Script: Spike2 Data Collection</a> © 2023 by
+<a href="https://github.com/PaulT95/Spike2_collecting">PATEC Script: Spike2 Data Collection </a> © 2023 by
 <a href="https://github.com/PaulT95/">Paolo Tecchio</a> is licensed under
 <a href="https://creativecommons.org/licenses/by-nc/4.0/">
   Creative Commons Attribution-NonCommercial 4.0 International
